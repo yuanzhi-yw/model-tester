@@ -3,7 +3,7 @@
 [English](#english) | [中文](#中文)
 
 ---
-
+来L站[https://linux.do/](https://linux.do/)
 ## 中文
 
 一个单页静态 Web 应用，用于测试 OpenAI 兼容 API 端点。无需后端，无需构建，直接浏览器打开即用。
