@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Tester</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,510;14..32,590&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #09090b;
+    --panel:      #0f1011;
+    --surface:    #191a1b;
+    --hover:      rgba(255,255,255,0.03);
+    --text:       #f7f8f8;
+    --text2:      #d0d6e0;
+    --text3:      #8a8f98;
+    --text4:      #62666d;
+    --accent:     #5e6ad2;
+    --accent2:    #7170ff;
+    --accent3:    #828fff;
+    --green:      #10b981;
+    --red:        #ef4444;
+    --amber:      #f59e0b;
+    --border:     rgba(255,255,255,0.05);
+    --border2:    rgba(255,255,255,0.08);
+    --border3:    rgba(255,255,255,0.06);
+    --font:       'Inter', -apple-system, system-ui, sans-serif;
+    --mono:       ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    font-feature-settings: "cv01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text2);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: -0.165px;
+    min-height: 100vh;
+  }
+
+  ::selection { background: rgba(113, 112, 255, 0.2); }
+
+  /* Page shell */
+  .page {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 80px 24px 120px;
+  }
+
+  /* Header */
+  .header { margin-bottom: 80px; }
+  .header h1 {
+    font-size: 48px;
+    font-weight: 510;
+    line-height: 1.0;
+    letter-spacing: -1.056px;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+  .header p {
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: -0.165px;
+    color: var(--text3);
+    max-width: 540px;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 80px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-label {
+    font-size: 12px;
+    font-weight: 510;
+    text-transform: uppercase;
+    color: var(--text4);
+    letter-spacing: 0.3px;
+  }
+  .section-header-actions {
+    display: flex;
+    gap: 4px;
+  }
+  /* Channel cards */
+  .channels {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .channel {
+    background: var(--panel);
+    border: none;
+    border-radius: 8px;
+    padding: 20px 24px;
+    transition: background 0.15s ease;
+  }
+  .channel:hover {
+    background: rgba(255, 255, 255, 0.025);
+  }
+  .channel-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .channel-name h3 {
+    font-size: 14px;
+    font-weight: 510;
+    color: var(--text);
+    letter-spacing: -0.182px;
+    flex: 1;
+  }
+  .channel-name .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot--0 { background: var(--accent2); }
+  .dot--1 { background: #38bdf8; }
+  .dot--2 { background: #a78bfa; }
+  .dot--3 { background: #34d399; }
+  .dot--4 { background: #fb923c; }
+
+  .channel-fields {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 1fr;
+    gap: 12px;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 510;
+    color: var(--text4);
+    margin-bottom: 5px;
+    letter-spacing: 0.1px;
+  }
+  .field input {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text2);
+    font-size: 13px;
+    font-family: var(--mono);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field input::placeholder { color: var(--text4); }
+  .field input:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 1px rgba(113, 112, 255, 0.12),
+                rgba(0, 0, 0, 0.1) 0px 4px 12px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 510;
+    font-family: var(--font);
+    font-feature-settings: "cv01", "ss03";
+    cursor: pointer;
+    transition: all 0.12s ease;
+    line-height: 1.5;
+    outline: none;
+  }
+  .btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn--primary:hover {
+    background: var(--accent3);
+    border-color: var(--accent3);
+  }
+  .btn--primary:disabled { opacity: 0.4; pointer-events: none; }
+  .btn--ghost {
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text2);
+    border-color: var(--border2);
+  }
+  .btn--ghost:hover { background: rgba(255, 255, 255, 0.05); }
+  .btn--ghost:disabled { opacity: 0.35; pointer-events: none; }
+  .btn--danger {
+    background: transparent;
+    color: var(--red);
+    border-color: rgba(239, 68, 68, 0.12);
+  }
+  .btn--danger:hover { background: rgba(239, 68, 68, 0.06); }
+  .btn--sm { padding: 4px 10px; font-size: 12px; }
+  .btn--tiny { padding: 2px 8px; font-size: 11px; }
+
+  .action-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .action-row--between { justify-content: space-between; }
+
+  .status-line {
+    font-size: 13px;
+    color: var(--text4);
+    margin-top: 10px;
+    letter-spacing: -0.13px;
+  }
+  .status-line.ok { color: var(--green); }
+  .status-line.err { color: var(--red); }
+
+  /* Channel filter chips */
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px 3px 6px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 510;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    color: var(--text4);
+    background: transparent;
+    transition: all 0.12s ease;
+    user-select: none;
+  }
+  .filter-chip .fd {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .filter-chip.active { color: #fff; border-color: transparent; }
+  .filter-chip:hover { background: rgba(255, 255, 255, 0.03); }
+  .filter-chip.active:hover { opacity: 0.9; }
+
+  /* Model scroll list */
+  .model-scroll {
+    max-height: 380px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 2px 0;
+  }
+  .model-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--text2);
+    transition: background 0.08s ease;
+  }
+  .model-row:hover { background: var(--hover); }
+  .model-row input[type="checkbox"] {
+    accent-color: var(--accent2);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .src-tag {
+    font-size: 10px;
+    font-weight: 510;
+    font-family: var(--font);
+    font-feature-settings: "cv01", "ss03";
+    padding: 1px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .model-owner {
+    color: var(--text4);
+    font-size: 11px;
+    font-family: var(--font);
+    font-feature-settings: "cv01", "ss03";
+  }
+
+  /* Select row */
+  .select-links {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 510;
+  }
+  .select-links a {
+    color: var(--text4);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.1s ease;
+  }
+  .select-links a:hover { color: var(--text3); }
+  .select-hint { font-size: 12px; color: var(--text4); }
+
+  /* Results table */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 510;
+    text-transform: uppercase;
+    color: var(--text4);
+    letter-spacing: 0.2px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--text2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 0.08s ease; }
+  tbody tr:hover { background: rgba(255, 255, 255, 0.012); }
+  .cell-model {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+  }
+  .cell-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 510;
+    color: var(--text4);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .cell-source .sdot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* Pill badges with dots */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 10px 2px 6px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 510;
+    line-height: 1.5;
+    border: 1px solid;
+  }
+  .chip::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .chip--pass {
+    color: var(--green);
+    border-color: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.04);
+  }
+  .chip--pass::before { background: var(--green); }
+  .chip--fail {
+    color: var(--red);
+    border-color: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.04);
+  }
+  .chip--fail::before { background: var(--red); }
+  .chip--warn {
+    color: var(--amber);
+    border-color: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.04);
+  }
+  .chip--warn::before { background: var(--amber); }
+  .chip--idle {
+    color: var(--text4);
+    border-color: var(--border);
+    background: transparent;
+  }
+  .chip--idle::before { background: var(--text4); }
+
+  /* Progress */
+  .progress {
+    height: 2px;
+    background: rgba(255, 255, 255, 0.03);
+    margin-top: 20px;
+    border-radius: 1px;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .progress.on { opacity: 1; }
+  .progress-bar {
+    height: 100%;
+    background: var(--accent2);
+    width: 0%;
+    transition: width 0.25s ease;
+  }
+
+  /* Concurrency control */
+  .conc-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text4);
+  }
+  .conc-control select {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 2px 6px;
+    outline: none;
+    cursor: pointer;
+  }
+  .conc-control select:focus { border-color: var(--accent2); }
+
+  /* Footnote */
+  .footnote {
+    padding: 16px 20px;
+    background: rgba(94, 106, 210, 0.03);
+    border: 1px solid rgba(94, 106, 210, 0.06);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text3);
+    line-height: 1.7;
+    letter-spacing: -0.13px;
+  }
+  .footnote strong { color: var(--text2); font-weight: 590; }
+  .footnote code {
+    background: rgba(94, 106, 210, 0.10);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  /* Spinner */
+  .spin {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 510;
+    color: var(--text2);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.18s ease;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px,
+                rgba(0, 0, 0, 0.2) 0px 0px 0px 1px;
+  }
+  .toast.on { opacity: 1; transform: translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .page { padding: 40px 16px 80px; }
+    .header h1 { font-size: 32px; }
+    .header { margin-bottom: 48px; }
+    .section { margin-bottom: 48px; }
+    .channel-fields {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <h1>Model Tester</h1>
+    <p>Add one or more endpoints, discover models, and verify chat + tool-calling across all channels.</p>
+  </div>
+
+  <!-- Channels -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label">Channels</div>
+      <div class="section-header-actions">
+        <button class="btn btn--ghost btn--tiny" onclick="exportChannels()" title="Export channels as JSON">Export</button>
+        <button class="btn btn--ghost btn--tiny" onclick="document.getElementById('importFile').click()" title="Import channels from JSON">Import</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importChannels(this)">
+      </div>
+    </div>
+    <div class="channels" id="channelList"></div>
+    <div class="action-row">
+      <button class="btn btn--ghost btn--sm" onclick="addChannel()">+ Add channel</button>
+    </div>
+  </div>
+
+  <!-- Fetch -->
+  <div class="section" id="fetchSection">
+    <div class="action-row">
+      <button class="btn btn--primary" id="btnFetch" onclick="fetchAllModels()">Fetch models</button>
+      <button class="btn btn--ghost" id="btnClear" onclick="clearAll()">Clear all</button>
+    </div>
+    <div class="status-line" id="fetchStatus"></div>
+  </div>
+
+  <!-- Model list -->
+  <div class="section" id="modelSection" style="display:none;">
+    <div class="section-label">Models <span id="modelCount" style="font-weight:400;"></span></div>
+    <div class="filter-row" id="filterRow"></div>
+    <div class="select-links">
+      <a onclick="selectAll()">Select all</a>
+      <a onclick="deselectAll()">Deselect all</a>
+      <a onclick="selectTextOnly()">Text only</a>
+      <span style="color:var(--text4);">&middot;</span>
+      <a onclick="clearHistory()" style="color:var(--red);">Clear history</a>
+    </div>
+    <div class="model-scroll" id="modelList"></div>
+    <div class="action-row action-row--between">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn--primary" id="btnTest" onclick="testSelected()" disabled>Test selected</button>
+        <span class="select-hint" id="selectedCount"></span>
+      </div>
+      <div class="conc-control">
+        Concurrency
+        <select id="concSelect">
+          <option value="1">1</option>
+          <option value="3" selected>3</option>
+          <option value="5">5</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+    </div>
+    <div class="progress" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+  </div>
+
+  <!-- Results -->
+  <div class="section" id="resultsSection" style="display:none;">
+    <div class="section-header">
+      <div class="section-label">Results</div>
+      <div class="section-header-actions">
+        <button class="btn btn--ghost btn--tiny" onclick="exportResults('json')">Export JSON</button>
+        <button class="btn btn--ghost btn--tiny" onclick="exportResults('csv')">Export CSV</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Model</th><th>Channel</th><th>Chat</th><th>Tools</th><th></th></tr></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>CORS</strong> — If the browser blocks requests, use an extension or local proxy.
+    Channels persist in <code>localStorage</code>. Export saves API keys in plain text.
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const D_COLOR = ['dot--0','dot--1','dot--2','dot--3','dot--4'];
+const D_HEX   = ['#7170ff','#38bdf8','#a78bfa','#34d399','#fb923c'];
+const D_BG    = ['#7170ff','#38bdf8','#a78bfa','#34d399','#fb923c'];
+
+let channels = [], models = [], results = {}, chCounter = 0, filterMask = [], testHistory = {};
+
+(function init() {
+  const s = localStorage.getItem('mt_channels');
+  if (s) { try { channels = JSON.parse(s); chCounter = channels.reduce((m,c)=>Math.max(m,c._id||0),0); } catch(e){} }
+  if (!channels.length) addChannel(true);
+  syncFilterMask();
+
+  const th = localStorage.getItem('mt_testHistory');
+  if (th) { try { testHistory = JSON.parse(th); } catch(e){} }
+
+  renderChannels();
+})();
+
+function persist() { localStorage.setItem('mt_channels', JSON.stringify(channels)); }
+function syncFilterMask() {
+  while (filterMask.length < channels.length) filterMask.push(true);
+  if (filterMask.length > channels.length) filterMask.length = channels.length;
+}
+
+function addChannel(silent) {
+  chCounter++;
+  channels.push({ _id:chCounter, name:'', baseUrl:'', apiKey:'' });
+  filterMask.push(true);
+  persist(); renderChannels();
+  if (!silent) toast('Channel added');
+}
+
+function removeChannel(idx) {
+  if (channels.length <= 1) { toast('Keep at least one channel'); return; }
+  channels.splice(idx,1);
+  filterMask.splice(idx,1);
+  persist(); renderChannels();
+  toast('Channel removed');
+}
+
+function renderChannels() {
+  document.getElementById('channelList').innerHTML = channels.map((ch,idx)=>{
+    const ci = D_COLOR[idx % D_COLOR.length];
+    const displayName = ch.name || `Channel ${idx+1}`;
+    return `<div class="channel">
+      <div class="channel-name">
+        <span class="dot ${ci}"></span><h3>${esc(displayName)}</h3>
+        ${channels.length>1?`<button class="btn btn--danger btn--sm" onclick="removeChannel(${idx})">Remove</button>`:''}
+      </div>
+      <div class="channel-fields">
+        <div class="field"><label>Name</label><input type="text" placeholder="My Provider" value="${esc(ch.name)}" onchange="updateCh(${idx},'name',this.value)" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label>Base URL</label><input type="text" placeholder="https://api.openai.com/v1" value="${esc(ch.baseUrl)}" onchange="updateCh(${idx},'baseUrl',this.value)" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label>API Key</label><input type="password" placeholder="sk-…" value="${esc(ch.apiKey)}" onchange="updateCh(${idx},'apiKey',this.value)" autocomplete="off" spellcheck="false"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateCh(idx, field, val) { channels[idx][field]=val.trim(); persist(); }
+
+// Import / Export
+function exportChannels() {
+  const exp = channels.map(ch => ({ name:ch.name, baseUrl:ch.baseUrl, apiKey:ch.apiKey }));
+  const blob = new Blob([JSON.stringify(exp, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'channels.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Channels exported');
+}
+
+function importChannels(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function() {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data)) throw new Error('Expected an array');
+      let added = 0;
+      data.forEach(item => {
+        if (item.baseUrl) {
+          chCounter++;
+          channels.push({ _id:chCounter, name:item.name||'', baseUrl:item.baseUrl, apiKey:item.apiKey||'' });
+          filterMask.push(true);
+          added++;
+        }
+      });
+      if (added === 0) { toast('No valid channels in file'); return; }
+      persist(); syncFilterMask(); renderChannels();
+      toast(`Imported ${added} channel${added>1?'s':''}`);
+    } catch(e) {
+      toast(`Import failed: ${e.message}`);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// Channel filter
+function renderFilters() {
+  const row = document.getElementById('filterRow');
+  if (channels.length <= 1) { row.innerHTML = ''; return; }
+  row.innerHTML = channels.map((ch, idx) => {
+    const bg = D_BG[idx % D_BG.length];
+    const active = filterMask[idx];
+    const label = ch.name || `CH${idx+1}`;
+    return `<span class="filter-chip${active?' active':''}" style="${active?`background:${bg}`:''}" onclick="toggleFilter(${idx})">
+      <span class="fd" style="background:${active?'#fff':bg}"></span>${esc(label)}
+    </span>`;
+  }).join('');
+}
+
+function toggleFilter(idx) {
+  filterMask[idx] = !filterMask[idx];
+  if (filterMask.every(v => !v)) { filterMask[idx] = true; return; }
+  renderFilters();
+  renderModelList();
+}
+
+function filteredModels() {
+  return models.filter(m => filterMask[m.channelId]);
+}
+
+// Normalize URL
+function normUrl(raw) {
+  let u = raw.trim();
+  if (!u) return '';
+  if (!u.startsWith('http')) u = 'https://' + u;
+  return u.replace(/\/+$/, '');
+}
+
+// Fetch models
+async function fetchAllModels() {
+  models=[]; results={};
+  document.getElementById('modelSection').style.display='none';
+  document.getElementById('resultsSection').style.display='none';
+  const st = document.getElementById('fetchStatus'); st.className='status-line';
+  const btn = document.getElementById('btnFetch');
+  btn.disabled=true; btn.textContent='Fetching…';
+
+  let total=0, errors=[];
+  for (let ci=0; ci<channels.length; ci++) {
+    const ch=channels[ci], base=normUrl(ch.baseUrl);
+    if (!base) continue;
+    const label = ch.name || `Channel ${ci+1}`;
+    st.textContent=`Fetching ${label}…`;
+    try {
+      const r = await fetch(`${base}/models`, { headers: ch.apiKey?{Authorization:`Bearer ${ch.apiKey}`}:{} });
+      if (!r.ok) { const t = await r.text().catch(()=>''); throw new Error(`HTTP ${r.status}: ${t.slice(0,150)}`); }
+      const d = await r.json();
+      const list = (d.data||d.models||d||[]).map(m=>typeof m==='string'?{id:m}:m).filter(m=>m.id);
+      list.forEach(m=>{ models.push({id:m.id, owned_by:m.owned_by||'', channelId:ci}); });
+      total+=list.length;
+    } catch(e) { errors.push(`[${label}] ${e.message}`); }
+  }
+
+  const seen = new Set();
+  models = models.filter(m=>{ const k=`${m.id}::${m.channelId}`; if(seen.has(k))return false; seen.add(k); return true; })
+    .sort((a,b)=>a.id.localeCompare(b.id)||a.channelId-b.channelId);
+
+  if (!models.length) {
+    st.textContent=errors.length?`Failed: ${errors.join('; ')}`:'No models found';
+    st.className='status-line err';
+  } else {
+    st.textContent=`Found ${models.length} model${models.length>1?'s':''} across ${channels.length} channel${channels.length>1?'s':''}${errors.length?' (with errors)':''}`;
+    st.className=errors.length?'status-line':'status-line ok';
+    renderFilters();
+    renderModelList();
+  }
+  btn.disabled=false; btn.textContent='Fetch models';
+}
+
+function renderModelList() {
+  document.getElementById('modelSection').style.display='block';
+  const fm = filteredModels();
+  document.getElementById('modelCount').textContent=`(${fm.length}${fm.length!==models.length?` / ${models.length}`:''})`;
+
+  document.getElementById('modelList').innerHTML = fm.map((m,i)=>{
+    const ci=m.channelId % D_COLOR.length, clr=D_HEX[ci];
+    const hk = `${m.id}::${m.channelId}`;
+    const hist = testHistory[hk];
+    const chLabel = channels.length>1
+      ? `<span class="src-tag" style="color:${clr}"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${clr};flex-shrink:0"></span> ${esc(channels[m.channelId].name||`CH${m.channelId+1}`)}</span>`:'';
+    const histBadge = hist
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;">
+          <span title="Chat: ${hist.chat==='pass'?'Pass':'Fail'} · TTFT ${hist.ttft||'—'} · ${hist.total||'—'} · ${hist.resp||''}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${hist.chat==='pass'?'var(--green)':'var(--red)'};flex-shrink:0;"></span>
+          <span title="Tools: ${hist.tool==='pass'?'Pass':hist.tool==='warn'?'Partial':'Fail'}${hist.toolName?` · ${hist.toolName}(${hist.toolArgs||''})`:''} · ${hist.toolTotal||''}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${hist.tool==='pass'?'var(--green)':hist.tool==='warn'?'var(--amber)':'var(--red)'};flex-shrink:0;"></span>
+          <span style="font-size:10px;color:var(--text4);font-family:var(--font);font-feature-settings:'cv01','ss03';">${hist.ts||''}</span>
+        </span>`
+      : '';
+    return `<label class="model-row">
+      <input type="checkbox" value="${esc(m.id)}" data-ch="${m.channelId}" onchange="onCheck()">
+      <span>${esc(m.id)}</span>${chLabel}
+      ${histBadge}
+      ${m.owned_by ? `<span class="model-owner">${esc(m.owned_by)}</span>` : ''}
+    </label>`;
+  }).join('');
+  onCheck();
+}
+
+function getChecked() {
+  return [...document.querySelectorAll('#modelList input:checked')].map(cb=>({
+    id:cb.value, channelId:parseInt(cb.dataset.ch)
+  }));
+}
+
+function onCheck() {
+  const c=getChecked();
+  document.getElementById('btnTest').disabled=c.length===0;
+  document.getElementById('selectedCount').textContent=c.length?`${c.length} selected`:'';
+}
+
+function selectAll(){ document.querySelectorAll('#modelList input').forEach(cb=>cb.checked=true); onCheck(); }
+function deselectAll(){ document.querySelectorAll('#modelList input').forEach(cb=>cb.checked=false); onCheck(); }
+function selectTextOnly(){ document.querySelectorAll('#modelList input').forEach(cb=>{
+  const id=cb.value.toLowerCase(); cb.checked=!(id.includes('vision')||id.includes('vl')||id.includes('multimodal')||id.includes('embed')||id.includes('tts')||id.includes('whisper')||id.includes('dall-e')||id.includes('image')||id.includes('audio')||id.includes('rerank'));
+}); onCheck(); }
+
+// Concurrent pool helper
+async function runPool(tasks, concurrency) {
+  const results = [];
+  let idx = 0;
+  async function worker() {
+    while (idx < tasks.length) {
+      const i = idx++;
+      results[i] = await tasks[i]();
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
+// Test selected models
+async function testSelected() {
+  const sel=getChecked(); if(!sel.length) return;
+  const btn=document.getElementById('btnTest'); btn.disabled=true; btn.textContent='Testing…';
+  document.getElementById('resultsSection').style.display='block';
+
+  const concurrency = parseInt(document.getElementById('concSelect').value) || 3;
+
+  results={};
+  sel.forEach(s=>{ const k=`${s.id}::${s.channelId}`; results[k]={id:s.id,ch:s.channelId,chat:'idle',tool:'idle',ttft:'',total:'',resp:'',ce:'',toolName:'',toolArgs:'',te:'',tokens:''}; });
+  renderResults();
+
+  const pw=document.getElementById('progressWrap'), pb=document.getElementById('progressBar');
+  pw.classList.add('on'); pb.style.width='0%';
+  let done=0; const total=sel.length*2;
+  function tick(){done++;pb.style.width=`${(done/total)*100}%`;}
+
+  async function testOne(s) {
+    const ch=channels[s.channelId], base=normUrl(ch.baseUrl), key=ch.apiKey, rk=`${s.id}::${s.channelId}`;
+
+    // Chat: streaming to capture TTFT + total
+    results[rk].chat='running'; renderResults();
+    const tStart=performance.now();
+    try {
+      let r;
+      let usedStreamOpts = true;
+      try {
+        r = await fetch(`${base}/chat/completions`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
+          body:JSON.stringify({model:s.id,messages:[{role:'user',content:'Say exactly: hello'}],max_tokens:50,stream:true,stream_options:{include_usage:true}})
+        });
+      } catch(fetchErr) {
+        throw fetchErr;
+      }
+      if (!r.ok && usedStreamOpts) {
+        const errText = await r.text().catch(()=>'');
+        const r2 = await fetch(`${base}/chat/completions`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
+          body:JSON.stringify({model:s.id,messages:[{role:'user',content:'Say exactly: hello'}],max_tokens:50,stream:true})
+        });
+        if (r2.ok) { r = r2; usedStreamOpts = false; }
+        else { throw new Error(`HTTP ${r.status}: ${errText.slice(0,150)}`); }
+      }
+      if(!r.ok){const e=await r.text().catch(()=>'');throw new Error(`HTTP ${r.status}: ${e.slice(0,150)}`)}
+      const reader=r.body.getReader(),decoder=new TextDecoder();
+      let ttft=0, content='', usage=null, buf='', streamDone=false;
+      while(!streamDone){
+        const{value,done:d}=await reader.read(); streamDone=d;
+        if(value){ buf+=decoder.decode(value,{stream:!d});
+          const lines=buf.split('\n'); buf=lines.pop()||'';
+          for(const line of lines){
+            const ls=line.trim(); if(!ls||!ls.startsWith('data:'))continue;
+            const data=ls.slice(5).trim(); if(data==='[DONE]')continue;
+            try{const j=JSON.parse(data);
+              if(!ttft&&j.choices?.[0]?.delta?.content) ttft=Math.round(performance.now()-tStart);
+              if(j.choices?.[0]?.delta?.content) content+=j.choices[0].delta.content;
+              if(j.usage) usage=j.usage;
+            }catch(_){}
+          }
+        }
+      }
+      const elapsed=Math.round(performance.now()-tStart);
+      const contentLower = content.trim().toLowerCase();
+      const hasHello = contentLower.includes('hello') || contentLower.includes('hi') || contentLower.length > 0;
+      results[rk].chat = hasHello ? 'pass' : 'fail';
+      results[rk].ttft=ttft?`${ttft}ms`:'—';
+      results[rk].total=`${elapsed}ms`;
+      results[rk].resp=content.trim().slice(0,80)||'(empty)';
+      results[rk].tokens=usage?`${usage.prompt_tokens||0}+${usage.completion_tokens||0}=${usage.total_tokens||0}tk`:'';
+      if (!hasHello) results[rk].ce = 'Did not contain expected response';
+    }catch(e){
+      const elapsed=Math.round(performance.now()-tStart);
+      results[rk].chat='fail';results[rk].ce=e.message;
+      results[rk].ttft='—';results[rk].total=`${elapsed}ms`;
+    }
+    tick();renderResults();
+
+    // Tool: non-streaming, force specific tool_choice
+    results[rk].tool='running'; renderResults();
+    const t1=performance.now();
+    try {
+      const r=await fetch(`${base}/chat/completions`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
+        body:JSON.stringify({model:s.id,messages:[{role:'user',content:'What is the weather in Beijing?'}],tools:[{type:'function',function:{name:'get_weather',description:'Get weather for a city',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}}],tool_choice:{type:'function',function:{name:'get_weather'}},max_tokens:200})
+      });
+      const ms=Math.round(performance.now()-t1);
+      if(!r.ok){const e=await r.text().catch(()=>'');throw new Error(`HTTP ${r.status}: ${e.slice(0,150)}`)}
+      const d=await r.json(),chc=d.choices?.[0];
+      const tcs=chc?.message?.tool_calls;
+      if(tcs&&tcs.length>0){
+        results[rk].tool='pass';
+        results[rk].toolName=tcs[0].function?.name||'(unnamed)';
+        try{results[rk].toolArgs=JSON.stringify(JSON.parse(tcs[0].function?.arguments||'{}'));}catch(_){results[rk].toolArgs=tcs[0].function?.arguments||''}
+      }else if(chc?.message?.content){
+        const r2=await fetch(`${base}/chat/completions`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
+          body:JSON.stringify({model:s.id,messages:[{role:'user',content:'What is the weather in Beijing? Use the get_weather tool.'}],tools:[{type:'function',function:{name:'get_weather',description:'Get weather for a city',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}}],tool_choice:'auto',max_tokens:200})
+        });
+        const ms2=Math.round(performance.now()-t1);
+        if(r2.ok){
+          const d2=await r2.json(),tcs2=d2.choices?.[0]?.message?.tool_calls;
+          if(tcs2&&tcs2.length>0){
+            results[rk].tool='pass';
+            results[rk].toolName=tcs2[0].function?.name||'(unnamed)';
+            try{results[rk].toolArgs=JSON.stringify(JSON.parse(tcs2[0].function?.arguments||'{}'));}catch(_){results[rk].toolArgs=tcs2[0].function?.arguments||''}
+          }else{
+            results[rk].tool='warn';results[rk].te='Replied with text, no tool call';
+          }
+        }else{
+          results[rk].tool='warn';results[rk].te='Replied with text, no tool call';
+        }
+        results[rk].toolTotal=`${ms2}ms`;
+      }else{
+        results[rk].tool='fail';results[rk].te='No tool call returned';
+      }
+      if(!results[rk].toolTotal) results[rk].toolTotal=`${ms}ms`;
+    }catch(e){
+      try {
+        const r2=await fetch(`${base}/chat/completions`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
+          body:JSON.stringify({model:s.id,messages:[{role:'user',content:'What is the weather in Beijing? Use the get_weather tool.'}],tools:[{type:'function',function:{name:'get_weather',description:'Get weather for a city',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}}],tool_choice:'auto',max_tokens:200})
+        });
+        const ms2=Math.round(performance.now()-t1);
+        if(r2.ok){
+          const d2=await r2.json(),tcs2=d2.choices?.[0]?.message?.tool_calls;
+          if(tcs2&&tcs2.length>0){
+            results[rk].tool='pass';
+            results[rk].toolName=tcs2[0].function?.name||'(unnamed)';
+            try{results[rk].toolArgs=JSON.stringify(JSON.parse(tcs2[0].function?.arguments||'{}'));}catch(_){results[rk].toolArgs=tcs2[0].function?.arguments||''}
+          }else{
+            results[rk].tool='warn';results[rk].te='Replied with text, no tool call (auto)';
+          }
+        }else{
+          results[rk].tool='fail';results[rk].te=e.message;
+        }
+        results[rk].toolTotal=`${ms2}ms`;
+      }catch(e2){
+        results[rk].tool='fail';results[rk].te=e.message;results[rk].toolTotal=`${Math.round(performance.now()-t1)}ms`;
+      }
+    }
+    tick();renderResults();
+
+    // Save to persistent history
+    const now = new Date();
+    const ts = `${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    testHistory[rk] = {
+      chat: results[rk].chat,
+      tool: results[rk].tool,
+      ttft: results[rk].ttft,
+      total: results[rk].total,
+      resp: results[rk].resp,
+      tokens: results[rk].tokens,
+      toolName: results[rk].toolName,
+      toolArgs: results[rk].toolArgs,
+      toolTotal: results[rk].toolTotal,
+      ts
+    };
+    localStorage.setItem('mt_testHistory', JSON.stringify(testHistory));
+  }
+
+  const tasks = sel.map(s => () => testOne(s));
+  await runPool(tasks, concurrency);
+
+  pw.classList.remove('on'); btn.disabled=false; btn.textContent='Test selected';
+  renderModelList();
+  toast(`${sel.length} model${sel.length>1?'s':''} tested`);
+}
+
+// Render results table
+function renderResults() {
+  const entries=Object.values(results);
+  document.getElementById('resultsBody').innerHTML=entries.length===0
+    ?'<tr><td colspan="5" style="color:var(--text4);text-align:center;padding:32px;font-family:var(--font)">—</td></tr>'
+    :entries.map(r=>{
+      const ci=r.ch%D_COLOR.length,clr=D_HEX[ci];
+      const chLabel = channels[r.ch]?.name || `CH${r.ch+1}`;
+      const chatDetail=r.chat==='pass'
+        ?`<div style="font-size:11px;color:var(--text4);margin-top:2px;">TTFT ${r.ttft} · total ${r.total}${r.tokens?` · ${r.tokens}`:''}</div><div style="font-size:11px;color:var(--text3);margin-top:1px;font-family:var(--mono);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.resp||'')}">${esc((r.resp||'').slice(0,60))}</div>`
+        :r.chat==='fail'?`<div style="font-size:11px;color:var(--red);margin-top:2px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.ce||'')}">${esc((r.ce||'').slice(0,60))}</div>`
+        :r.chat==='running'?'<div style="font-size:11px;color:var(--text4);margin-top:2px;"><span class="spin"></span></div>':'';
+      const toolDetail=r.tool==='pass'
+        ?`<div style="font-size:11px;color:var(--text4);margin-top:2px;">${r.toolTotal} · <code style="font-family:var(--mono);background:rgba(255,255,255,0.04);padding:1px 4px;border-radius:3px;">${esc(r.toolName||'')}(${esc((r.toolArgs||'').slice(0,40))})</code></div>`
+        :r.tool==='warn'?`<div style="font-size:11px;color:var(--amber);margin-top:2px;">${esc(r.te||'')}</div>`
+        :r.tool==='fail'?`<div style="font-size:11px;color:var(--red);margin-top:2px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.te||'')}">${esc((r.te||'').slice(0,60))}</div>`
+        :r.tool==='running'?'<div style="font-size:11px;color:var(--text4);margin-top:2px;"><span class="spin"></span></div>':'';
+      return `<tr>
+        <td class="cell-model">${esc(r.id)}</td>
+        <td><span class="cell-source"><span class="sdot" style="background:${clr}"></span>${esc(chLabel)}</span></td>
+        <td>${chip(r.chat)}${chatDetail}</td>
+        <td>${chip(r.tool)}${toolDetail}</td>
+        <td></td>
+      </tr>`;
+    }).join('');
+}
+
+function chip(s){
+  if(s==='idle')return'<span class="chip chip--idle">Pending</span>';
+  if(s==='running')return'<span class="chip chip--idle"><span class="spin" style="width:10px;height:10px;border-width:1.5px;"></span></span>';
+  const cls=s==='pass'?'pass':s==='fail'?'fail':s==='warn'?'warn':'idle';
+  return`<span class="chip chip--${cls}">${s==='pass'?'Pass':s==='fail'?'Fail':s==='warn'?'Partial':s}</span>`;
+}
+
+function clearHistory() {
+  testHistory = {};
+  localStorage.removeItem('mt_testHistory');
+  renderModelList();
+  toast('Test history cleared');
+}
+
+function clearAll(){
+  models=[];results={};
+  document.getElementById('modelSection').style.display='none';
+  document.getElementById('resultsSection').style.display='none';
+  document.getElementById('fetchStatus').textContent='';
+  document.getElementById('fetchStatus').className='status-line';
+  document.getElementById('modelList').innerHTML='';
+  document.getElementById('resultsBody').innerHTML='';
+  document.getElementById('progressWrap').classList.remove('on');
+  document.getElementById('btnTest').disabled=true;
+  document.getElementById('selectedCount').textContent='';
+  document.getElementById('btnFetch').disabled=false;
+  document.getElementById('btnFetch').textContent='Fetch models';
+}
+
+// Export Results
+function exportResults(format) {
+  const entries = Object.values(results);
+  if (!entries.length) { toast('No results to export'); return; }
+
+  let blob, filename;
+  if (format === 'json') {
+    const data = entries.map(r => {
+      const chLabel = channels[r.ch]?.name || `CH${r.ch+1}`;
+      return {
+        model: r.id,
+        channel: chLabel,
+        chat: r.chat,
+        ttft: r.ttft,
+        total: r.total,
+        tokens: r.tokens,
+        response: r.resp,
+        chatError: r.ce,
+        tool: r.tool,
+        toolName: r.toolName,
+        toolArgs: r.toolArgs,
+        toolTotal: r.toolTotal,
+        toolError: r.te
+      };
+    });
+    blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    filename = 'model-test-results.json';
+  } else {
+    const headers = ['model','channel','chat','ttft','total','tokens','response','chatError','tool','toolName','toolArgs','toolTotal','toolError'];
+    const csvEscape = s => `"${(s||'').replace(/"/g,'""')}"`;
+    const rows = entries.map(r => {
+      const chLabel = channels[r.ch]?.name || `CH${r.ch+1}`;
+      return [r.id,chLabel,r.chat,r.ttft,r.total,r.tokens,r.resp,r.ce,r.tool,r.toolName,r.toolArgs,r.toolTotal,r.te].map(csvEscape).join(',');
+    });
+    blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+    filename = 'model-test-results.csv';
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Results exported as ${format.toUpperCase()}`);
+}
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2000);}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+</script>
+</body>
+</html>
