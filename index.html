@@ -1008,12 +1008,15 @@ function filteredModels() {
   return models.filter(m => filterMask[m.channelId]);
 }
 
-// Normalize URL
+// Normalize URL — auto-append /v1 if missing
 function normUrl(raw) {
   let u = raw.trim();
   if (!u) return '';
   if (!u.startsWith('http')) u = 'https://' + u;
-  return u.replace(/\/+$/, '');
+  u = u.replace(/\/+$/, '');
+  // Auto-append /v1 if not already ending with it
+  if (!/\/v1\/?$/.test(u)) u += '/v1';
+  return u;
 }
 
 // Fetch models
