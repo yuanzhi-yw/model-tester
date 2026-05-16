@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="zh" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -827,8 +827,8 @@ const LANG = {
   }
 };
 
-let curLang = localStorage.getItem('mt_lang') || 'en';
-let curTheme = localStorage.getItem('mt_theme') || 'dark';
+let curLang = localStorage.getItem('mt_lang') || 'zh';
+let curTheme = localStorage.getItem('mt_theme') || 'light';
 
 function t(key) { return LANG[curLang][key] || LANG.en[key] || key; }
 
