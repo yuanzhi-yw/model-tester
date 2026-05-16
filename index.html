@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,6 +31,26 @@
   }
 
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [data-theme="light"] {
+    --bg: #ffffff;
+    --panel: #f9f9fb;
+    --surface: #f0f0f3;
+    --hover: rgba(0,0,0,0.03);
+    --text: #1a1a1a;
+    --text2: #3d3d3d;
+    --text3: #6b6b6b;
+    --text4: #9a9a9a;
+    --accent: #5e6ad2;
+    --accent2: #7170ff;
+    --accent3: #828fff;
+    --green: #10b981;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --border: rgba(0,0,0,0.06);
+    --border2: rgba(0,0,0,0.10);
+    --border3: rgba(0,0,0,0.08);
+  }
 
   html {
     font-feature-settings: "cv01", "ss03";
@@ -534,6 +554,67 @@
     .channel-fields {
       grid-template-columns: 1fr;
     }
+    .header-top { flex-wrap: wrap; gap: 12px; }
+  }
+
+  /* Light theme overrides for hardcoded rgba values */
+  [data-theme="light"] .channel:hover { background: rgba(0, 0, 0, 0.02); }
+  [data-theme="light"] .btn--ghost { background: rgba(0, 0, 0, 0.03); }
+  [data-theme="light"] .btn--ghost:hover { background: rgba(0, 0, 0, 0.06); }
+  [data-theme="light"] .field input { background: rgba(0, 0, 0, 0.02); }
+  [data-theme="light"] .field input:focus {
+    box-shadow: 0 0 0 1px rgba(113, 112, 255, 0.2),
+                rgba(0, 0, 0, 0.05) 0px 4px 12px;
+  }
+  [data-theme="light"] tbody tr:hover { background: rgba(0, 0, 0, 0.015); }
+  [data-theme="light"] .filter-chip:hover { background: rgba(0, 0, 0, 0.04); }
+  [data-theme="light"] .model-row:hover { background: rgba(0, 0, 0, 0.03); }
+  [data-theme="light"] .conc-control select { background: rgba(0, 0, 0, 0.02); }
+  [data-theme="light"] .cell-source { background: rgba(0, 0, 0, 0.03); }
+  [data-theme="light"] .progress { background: rgba(0, 0, 0, 0.04); }
+  [data-theme="light"] .toast {
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 8px,
+                rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+  }
+  [data-theme="light"] .footnote {
+    background: rgba(94, 106, 210, 0.04);
+    border-color: rgba(94, 106, 210, 0.10);
+  }
+  [data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); }
+  [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
+  [data-theme="light"] ::selection { background: rgba(113, 112, 255, 0.15); }
+
+  /* Header top row */
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 510;
+    font-family: var(--font);
+    color: var(--text3);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    outline: none;
+  }
+  .toggle-btn:hover {
+    color: var(--text2);
+    background: var(--hover);
   }
 </style>
 </head>
@@ -541,23 +622,29 @@
 
 <div class="page">
   <div class="header">
-    <h1>Model Tester</h1>
-    <p>Add one or more endpoints, discover models, and verify chat + tool-calling across all channels.</p>
+    <div class="header-top">
+      <h1 id="appTitle">Model Tester</h1>
+      <div class="header-controls">
+        <button class="toggle-btn" id="themeToggle" onclick="toggleTheme()"></button>
+        <button class="toggle-btn" id="langToggle" onclick="toggleLang()"></button>
+      </div>
+    </div>
+    <p id="appDesc">Add one or more endpoints, discover models, and verify chat + tool-calling across all channels.</p>
   </div>
 
   <!-- Channels -->
   <div class="section">
     <div class="section-header">
-      <div class="section-label">Channels</div>
+      <div class="section-label" id="lblChannels">Channels</div>
       <div class="section-header-actions">
-        <button class="btn btn--ghost btn--tiny" onclick="exportChannels()" title="Export channels as JSON">Export</button>
-        <button class="btn btn--ghost btn--tiny" onclick="document.getElementById('importFile').click()" title="Import channels from JSON">Import</button>
+        <button class="btn btn--ghost btn--tiny" onclick="exportChannels()" id="btnExportCh">Export</button>
+        <button class="btn btn--ghost btn--tiny" onclick="document.getElementById('importFile').click()" id="btnImportCh">Import</button>
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importChannels(this)">
       </div>
     </div>
     <div class="channels" id="channelList"></div>
     <div class="action-row">
-      <button class="btn btn--ghost btn--sm" onclick="addChannel()">+ Add channel</button>
+      <button class="btn btn--ghost btn--sm" onclick="addChannel()" id="btnAddCh">+ Add channel</button>
     </div>
   </div>
 
@@ -572,14 +659,14 @@
 
   <!-- Model list -->
   <div class="section" id="modelSection" style="display:none;">
-    <div class="section-label">Models <span id="modelCount" style="font-weight:400;"></span></div>
+    <div class="section-label"><span id="lblModels">Models</span> <span id="modelCount" style="font-weight:400;"></span></div>
     <div class="filter-row" id="filterRow"></div>
-    <div class="select-links">
-      <a onclick="selectAll()">Select all</a>
-      <a onclick="deselectAll()">Deselect all</a>
-      <a onclick="selectTextOnly()">Text only</a>
+    <div class="select-links" id="selectLinksRow">
+      <a onclick="selectAll()" id="lnkSelectAll">Select all</a>
+      <a onclick="deselectAll()" id="lnkDeselectAll">Deselect all</a>
+      <a onclick="selectTextOnly()" id="lnkTextOnly">Text only</a>
       <span style="color:var(--text4);">&middot;</span>
-      <a onclick="clearHistory()" style="color:var(--red);">Clear history</a>
+      <a onclick="clearHistory()" style="color:var(--red);" id="lnkClearHist">Clear history</a>
     </div>
     <div class="model-scroll" id="modelList"></div>
     <div class="action-row action-row--between">
@@ -588,7 +675,7 @@
         <span class="select-hint" id="selectedCount"></span>
       </div>
       <div class="conc-control">
-        Concurrency
+        <span id="lblConc">Concurrency</span>
         <select id="concSelect">
           <option value="1">1</option>
           <option value="3" selected>3</option>
@@ -603,21 +690,21 @@
   <!-- Results -->
   <div class="section" id="resultsSection" style="display:none;">
     <div class="section-header">
-      <div class="section-label">Results</div>
+      <div class="section-label" id="lblResults">Results</div>
       <div class="section-header-actions">
-        <button class="btn btn--ghost btn--tiny" onclick="exportResults('json')">Export JSON</button>
-        <button class="btn btn--ghost btn--tiny" onclick="exportResults('csv')">Export CSV</button>
+        <button class="btn btn--ghost btn--tiny" onclick="exportResults('json')" id="btnExpJson">Export JSON</button>
+        <button class="btn btn--ghost btn--tiny" onclick="exportResults('csv')" id="btnExpCsv">Export CSV</button>
       </div>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Model</th><th>Channel</th><th>Chat</th><th>Tools</th><th></th></tr></thead>
+        <thead><tr><th id="thModel">Model</th><th id="thChannel">Channel</th><th id="thChat">Chat</th><th id="thTools">Tools</th><th></th></tr></thead>
         <tbody id="resultsBody"></tbody>
       </table>
     </div>
   </div>
 
-  <div class="footnote">
+  <div class="footnote" id="footnoteEl">
     <strong>CORS</strong> — If the browser blocks requests, use an extension or local proxy.
     Channels persist in <code>localStorage</code>. Export saves API keys in plain text.
   </div>
@@ -626,6 +713,175 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ── i18n ──
+const LANG = {
+  en: {
+    title: 'Model Tester',
+    desc: 'Add one or more endpoints, discover models, and verify chat + tool-calling across all channels.',
+    channels: 'Channels',
+    export: 'Export',
+    import: 'Import',
+    addChannel: '+ Add channel',
+    name: 'Name',
+    baseUrl: 'Base URL',
+    apiKey: 'API Key',
+    remove: 'Remove',
+    fetchModels: 'Fetch models',
+    fetching: 'Fetching…',
+    clearAll: 'Clear all',
+    models: 'Models',
+    selectAll: 'Select all',
+    deselectAll: 'Deselect all',
+    textOnly: 'Text only',
+    clearHistory: 'Clear history',
+    testSelected: 'Test selected',
+    testing: 'Testing…',
+    concurrency: 'Concurrency',
+    selected: 'selected',
+    results: 'Results',
+    exportJson: 'Export JSON',
+    exportCsv: 'Export CSV',
+    model: 'Model',
+    channel: 'Channel',
+    chat: 'Chat',
+    tools: 'Tools',
+    pass: 'Pass',
+    fail: 'Fail',
+    partial: 'Partial',
+    pending: 'Pending',
+    channelAdded: 'Channel added',
+    channelRemoved: 'Channel removed',
+    keepOne: 'Keep at least one channel',
+    channelsExported: 'Channels exported',
+    imported: (n) => `Imported ${n} channel${n>1?'s':''}`,
+    noValidChannels: 'No valid channels in file',
+    importFailed: (msg) => `Import failed: ${msg}`,
+    foundModels: (n, ch) => `Found ${n} model${n>1?'s':''} across ${ch} channel${ch>1?'s':''}`,
+    foundModelsErr: (n, ch) => `Found ${n} model${n>1?'s':''} across ${ch} channel${ch>1?'s':''} (with errors)`,
+    noModels: 'No models found',
+    historyCleared: 'Test history cleared',
+    exportedJson: 'Results exported as JSON',
+    exportedCsv: 'Results exported as CSV',
+    noResults: 'No results to export',
+    tested: (n) => `${n} model${n>1?'s':''} tested`,
+    footCors: 'CORS',
+    footMsg: 'If the browser blocks requests, use an extension or local proxy.',
+    footStorage: 'Channels persist in <code>localStorage</code>. Export saves API keys in plain text.',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+  },
+  zh: {
+    title: '模型测试器',
+    desc: '添加一个或多个 API 端点，发现模型，验证聊天和工具调用能力。',
+    channels: '渠道',
+    export: '导出',
+    import: '导入',
+    addChannel: '+ 添加渠道',
+    name: '名称',
+    baseUrl: '接口地址',
+    apiKey: '密钥',
+    remove: '移除',
+    fetchModels: '获取模型',
+    fetching: '获取中…',
+    clearAll: '全部清除',
+    models: '模型',
+    selectAll: '全选',
+    deselectAll: '全不选',
+    textOnly: '仅文本',
+    clearHistory: '清除历史',
+    testSelected: '测试选中',
+    testing: '测试中…',
+    concurrency: '并发数',
+    selected: '已选',
+    results: '结果',
+    exportJson: '导出 JSON',
+    exportCsv: '导出 CSV',
+    model: '模型',
+    channel: '渠道',
+    chat: '聊天',
+    tools: '工具',
+    pass: '通过',
+    fail: '失败',
+    partial: '部分',
+    pending: '等待中',
+    channelAdded: '已添加渠道',
+    channelRemoved: '已移除渠道',
+    keepOne: '至少保留一个渠道',
+    channelsExported: '渠道已导出',
+    imported: (n) => `已导入 ${n} 个渠道`,
+    noValidChannels: '文件中没有有效渠道',
+    importFailed: (msg) => `导入失败: ${msg}`,
+    foundModels: (n, ch) => `找到 ${n} 个模型，来自 ${ch} 个渠道`,
+    foundModelsErr: (n, ch) => `找到 ${n} 个模型，来自 ${ch} 个渠道（有错误）`,
+    noModels: '未找到模型',
+    historyCleared: '测试历史已清除',
+    exportedJson: '结果已导出为 JSON',
+    exportedCsv: '结果已导出为 CSV',
+    noResults: '没有可导出的结果',
+    tested: (n) => `已测试 ${n} 个模型`,
+    footCors: '跨域',
+    footMsg: '如果浏览器阻止请求，请使用浏览器扩展或本地代理。',
+    footStorage: '渠道信息保存在 <code>localStorage</code> 中。导出会包含明文 API 密钥。',
+    themeLight: '浅色',
+    themeDark: '深色',
+  }
+};
+
+let curLang = localStorage.getItem('mt_lang') || 'en';
+let curTheme = localStorage.getItem('mt_theme') || 'dark';
+
+function t(key) { return LANG[curLang][key] || LANG.en[key] || key; }
+
+function toggleTheme() {
+  curTheme = curTheme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('mt_theme', curTheme);
+  applyTheme();
+}
+
+function toggleLang() {
+  curLang = curLang === 'en' ? 'zh' : 'en';
+  localStorage.setItem('mt_lang', curLang);
+  applyLang();
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', curTheme);
+  document.getElementById('themeToggle').textContent = curTheme === 'dark' ? `◐ ${t('themeLight')}` : `◑ ${t('themeDark')}`;
+}
+
+function applyLang() {
+  document.getElementById('appTitle').textContent = t('title');
+  document.getElementById('appDesc').textContent = t('desc');
+  document.getElementById('lblChannels').textContent = t('channels');
+  document.getElementById('btnExportCh').textContent = t('export');
+  document.getElementById('btnImportCh').textContent = t('import');
+  document.getElementById('btnAddCh').textContent = t('addChannel');
+  document.getElementById('btnFetch').textContent = t('fetchModels');
+  document.getElementById('btnClear').textContent = t('clearAll');
+  document.getElementById('lblModels').textContent = t('models');
+  document.getElementById('lnkSelectAll').textContent = t('selectAll');
+  document.getElementById('lnkDeselectAll').textContent = t('deselectAll');
+  document.getElementById('lnkTextOnly').textContent = t('textOnly');
+  document.getElementById('lnkClearHist').textContent = t('clearHistory');
+  document.getElementById('btnTest').textContent = t('testSelected');
+  document.getElementById('lblConc').textContent = t('concurrency');
+  document.getElementById('lblResults').textContent = t('results');
+  document.getElementById('btnExpJson').textContent = t('exportJson');
+  document.getElementById('btnExpCsv').textContent = t('exportCsv');
+  document.getElementById('thModel').textContent = t('model');
+  document.getElementById('thChannel').textContent = t('channel');
+  document.getElementById('thChat').textContent = t('chat');
+  document.getElementById('thTools').textContent = t('tools');
+  document.getElementById('footnoteEl').innerHTML = `<strong>${t('footCors')}</strong> — ${t('footMsg')} ${t('footStorage')}`;
+  document.getElementById('langToggle').textContent = curLang === 'en' ? '中文' : 'EN';
+  // Update theme button text too (it uses translated strings)
+  document.getElementById('themeToggle').textContent = curTheme === 'dark' ? `◐ ${t('themeLight')}` : `◑ ${t('themeDark')}`;
+  // Re-render dynamic content
+  renderChannels();
+  if (models.length) renderModelList();
+  if (Object.keys(results).length) renderResults();
+  onCheck();
+}
 const D_COLOR = ['dot--0','dot--1','dot--2','dot--3','dot--4'];
 const D_HEX   = ['#7170ff','#38bdf8','#a78bfa','#34d399','#fb923c'];
 const D_BG    = ['#7170ff','#38bdf8','#a78bfa','#34d399','#fb923c'];
@@ -641,7 +897,8 @@ let channels = [], models = [], results = {}, chCounter = 0, filterMask = [], te
   const th = localStorage.getItem('mt_testHistory');
   if (th) { try { testHistory = JSON.parse(th); } catch(e){} }
 
-  renderChannels();
+  applyTheme();
+  applyLang();
 })();
 
 function persist() { localStorage.setItem('mt_channels', JSON.stringify(channels)); }
@@ -655,15 +912,15 @@ function addChannel(silent) {
   channels.push({ _id:chCounter, name:'', baseUrl:'', apiKey:'' });
   filterMask.push(true);
   persist(); renderChannels();
-  if (!silent) toast('Channel added');
+  if (!silent) toast(t('channelAdded'));
 }
 
 function removeChannel(idx) {
-  if (channels.length <= 1) { toast('Keep at least one channel'); return; }
+  if (channels.length <= 1) { toast(t('keepOne')); return; }
   channels.splice(idx,1);
   filterMask.splice(idx,1);
   persist(); renderChannels();
-  toast('Channel removed');
+  toast(t('channelRemoved'));
 }
 
 function renderChannels() {
@@ -673,12 +930,12 @@ function renderChannels() {
     return `<div class="channel">
       <div class="channel-name">
         <span class="dot ${ci}"></span><h3>${esc(displayName)}</h3>
-        ${channels.length>1?`<button class="btn btn--danger btn--sm" onclick="removeChannel(${idx})">Remove</button>`:''}
+        ${channels.length>1?`<button class="btn btn--danger btn--sm" onclick="removeChannel(${idx})">${t('remove')}</button>`:''}
       </div>
       <div class="channel-fields">
-        <div class="field"><label>Name</label><input type="text" placeholder="My Provider" value="${esc(ch.name)}" onchange="updateCh(${idx},'name',this.value)" autocomplete="off" spellcheck="false"></div>
-        <div class="field"><label>Base URL</label><input type="text" placeholder="https://api.openai.com/v1" value="${esc(ch.baseUrl)}" onchange="updateCh(${idx},'baseUrl',this.value)" autocomplete="off" spellcheck="false"></div>
-        <div class="field"><label>API Key</label><input type="password" placeholder="sk-…" value="${esc(ch.apiKey)}" onchange="updateCh(${idx},'apiKey',this.value)" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label>${t('name')}</label><input type="text" placeholder="My Provider" value="${esc(ch.name)}" onchange="updateCh(${idx},'name',this.value)" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label>${t('baseUrl')}</label><input type="text" placeholder="https://api.openai.com/v1" value="${esc(ch.baseUrl)}" onchange="updateCh(${idx},'baseUrl',this.value)" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label>${t('apiKey')}</label><input type="password" placeholder="sk-…" value="${esc(ch.apiKey)}" onchange="updateCh(${idx},'apiKey',this.value)" autocomplete="off" spellcheck="false"></div>
       </div>
     </div>`;
   }).join('');
@@ -695,7 +952,7 @@ function exportChannels() {
   a.download = 'channels.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  toast('Channels exported');
+  toast(t('channelsExported'));
 }
 
 function importChannels(input) {
@@ -715,11 +972,11 @@ function importChannels(input) {
           added++;
         }
       });
-      if (added === 0) { toast('No valid channels in file'); return; }
+      if (added === 0) { toast(t('noValidChannels')); return; }
       persist(); syncFilterMask(); renderChannels();
-      toast(`Imported ${added} channel${added>1?'s':''}`);
+      toast(LANG[curLang].imported(added));
     } catch(e) {
-      toast(`Import failed: ${e.message}`);
+      toast(LANG[curLang].importFailed(e.message));
     }
   };
   reader.readAsText(file);
@@ -766,17 +1023,17 @@ async function fetchAllModels() {
   document.getElementById('resultsSection').style.display='none';
   const st = document.getElementById('fetchStatus'); st.className='status-line';
   const btn = document.getElementById('btnFetch');
-  btn.disabled=true; btn.textContent='Fetching…';
+  btn.disabled=true; btn.textContent=t('fetching');
 
   let total=0, errors=[];
   for (let ci=0; ci<channels.length; ci++) {
     const ch=channels[ci], base=normUrl(ch.baseUrl);
     if (!base) continue;
     const label = ch.name || `Channel ${ci+1}`;
-    st.textContent=`Fetching ${label}…`;
+    st.textContent=`${t('fetching').replace('…','')} ${label}…`;
     try {
       const r = await fetch(`${base}/models`, { headers: ch.apiKey?{Authorization:`Bearer ${ch.apiKey}`}:{} });
-      if (!r.ok) { const t = await r.text().catch(()=>''); throw new Error(`HTTP ${r.status}: ${t.slice(0,150)}`); }
+      if (!r.ok) { const txt = await r.text().catch(()=>''); throw new Error(`HTTP ${r.status}: ${txt.slice(0,150)}`); }
       const d = await r.json();
       const list = (d.data||d.models||d||[]).map(m=>typeof m==='string'?{id:m}:m).filter(m=>m.id);
       list.forEach(m=>{ models.push({id:m.id, owned_by:m.owned_by||'', channelId:ci}); });
@@ -789,15 +1046,17 @@ async function fetchAllModels() {
     .sort((a,b)=>a.id.localeCompare(b.id)||a.channelId-b.channelId);
 
   if (!models.length) {
-    st.textContent=errors.length?`Failed: ${errors.join('; ')}`:'No models found';
+    st.textContent=errors.length?`Failed: ${errors.join('; ')}`:t('noModels');
     st.className='status-line err';
   } else {
-    st.textContent=`Found ${models.length} model${models.length>1?'s':''} across ${channels.length} channel${channels.length>1?'s':''}${errors.length?' (with errors)':''}`;
+    st.textContent=errors.length
+      ? LANG[curLang].foundModelsErr(models.length, channels.length)
+      : LANG[curLang].foundModels(models.length, channels.length);
     st.className=errors.length?'status-line':'status-line ok';
     renderFilters();
     renderModelList();
   }
-  btn.disabled=false; btn.textContent='Fetch models';
+  btn.disabled=false; btn.textContent=t('fetchModels');
 }
 
 function renderModelList() {
@@ -837,7 +1096,7 @@ function getChecked() {
 function onCheck() {
   const c=getChecked();
   document.getElementById('btnTest').disabled=c.length===0;
-  document.getElementById('selectedCount').textContent=c.length?`${c.length} selected`:'';
+  document.getElementById('selectedCount').textContent=c.length?`${c.length} ${t('selected')}`:'';
 }
 
 function selectAll(){ document.querySelectorAll('#modelList input').forEach(cb=>cb.checked=true); onCheck(); }
@@ -864,7 +1123,7 @@ async function runPool(tasks, concurrency) {
 // Test selected models
 async function testSelected() {
   const sel=getChecked(); if(!sel.length) return;
-  const btn=document.getElementById('btnTest'); btn.disabled=true; btn.textContent='Testing…';
+  const btn=document.getElementById('btnTest'); btn.disabled=true; btn.textContent=t('testing');
   document.getElementById('resultsSection').style.display='block';
 
   const concurrency = parseInt(document.getElementById('concSelect').value) || 3;
@@ -1029,9 +1288,9 @@ async function testSelected() {
   const tasks = sel.map(s => () => testOne(s));
   await runPool(tasks, concurrency);
 
-  pw.classList.remove('on'); btn.disabled=false; btn.textContent='Test selected';
+  pw.classList.remove('on'); btn.disabled=false; btn.textContent=t('testSelected');
   renderModelList();
-  toast(`${sel.length} model${sel.length>1?'s':''} tested`);
+  toast(LANG[curLang].tested(sel.length));
 }
 
 // Render results table
@@ -1062,17 +1321,17 @@ function renderResults() {
 }
 
 function chip(s){
-  if(s==='idle')return'<span class="chip chip--idle">Pending</span>';
+  if(s==='idle')return`<span class="chip chip--idle">${t('pending')}</span>`;
   if(s==='running')return'<span class="chip chip--idle"><span class="spin" style="width:10px;height:10px;border-width:1.5px;"></span></span>';
   const cls=s==='pass'?'pass':s==='fail'?'fail':s==='warn'?'warn':'idle';
-  return`<span class="chip chip--${cls}">${s==='pass'?'Pass':s==='fail'?'Fail':s==='warn'?'Partial':s}</span>`;
+  return`<span class="chip chip--${cls}">${s==='pass'?t('pass'):s==='fail'?t('fail'):s==='warn'?t('partial'):s}</span>`;
 }
 
 function clearHistory() {
   testHistory = {};
   localStorage.removeItem('mt_testHistory');
   renderModelList();
-  toast('Test history cleared');
+  toast(t('historyCleared'));
 }
 
 function clearAll(){
@@ -1087,13 +1346,13 @@ function clearAll(){
   document.getElementById('btnTest').disabled=true;
   document.getElementById('selectedCount').textContent='';
   document.getElementById('btnFetch').disabled=false;
-  document.getElementById('btnFetch').textContent='Fetch models';
+  document.getElementById('btnFetch').textContent=t('fetchModels');
 }
 
 // Export Results
 function exportResults(format) {
   const entries = Object.values(results);
-  if (!entries.length) { toast('No results to export'); return; }
+  if (!entries.length) { toast(t('noResults')); return; }
 
   let blob, filename;
   if (format === 'json') {
@@ -1132,10 +1391,10 @@ function exportResults(format) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
-  toast(`Results exported as ${format.toUpperCase()}`);
+  toast(format === 'json' ? t('exportedJson') : t('exportedCsv'));
 }
 
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2000);}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2000);}
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 </script>
 </body>
