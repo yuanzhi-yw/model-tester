@@ -582,6 +582,19 @@
   }
   .auth-badge--na::before { background: var(--text4); }
 
+  .resp-model-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--amber);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+
   .auth-detail {
     margin-top: 6px;
     padding: 8px 10px;
@@ -2305,6 +2318,7 @@ async function testSelected() {
       if (!hasHello) results[rk].ce = 'Did not contain expected response';
 
       // ── Authenticity L0 + L1 ──
+      results[rk].respModel = responseModel || '';
       const l0Signals = checkL0(s.id, responseModel, systemFingerprint, respHeaders);
       const completionTokens = usage ? (usage.completion_tokens || 0) : 0;
       const l1Signals = checkL1(s.id, ttft, elapsed, completionTokens);
@@ -2459,7 +2473,10 @@ function renderResults() {
       } else {
         const authCls = r.auth === 'ok' ? 'ok' : r.auth === 'warn' ? 'warn' : 'fail';
         const authLabel = r.auth === 'ok' ? t('authOk') : r.auth === 'warn' ? t('authWarn') : t('authFail');
-        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${renderAuthDetail(r.authSignals, rk)}`;
+        const respModelTag = r.respModel && r.respModel !== r.id
+          ? `<span class="resp-model-tag" title="response.model">${esc(r.respModel)}</span>`
+          : '';
+        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${respModelTag}${renderAuthDetail(r.authSignals, rk)}`;
       }
       return `<tr>
         <td class="cell-model">${esc(r.id)}</td>
