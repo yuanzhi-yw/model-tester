@@ -755,6 +755,7 @@
     <div class="action-row action-row--between">
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn btn--primary" id="btnTest" onclick="testSelected()" disabled>Test selected</button>
+        <button class="btn btn--ghost" id="btnVerify" onclick="verifySelected()" disabled>Verify</button>
         <span class="select-hint" id="selectedCount"></span>
       </div>
       <div class="conc-control">
@@ -871,6 +872,25 @@ const LANG = {
     authHeadersNone: 'No vendor headers detected',
     authTps: 'tps',
     authExpected: 'expected',
+    verify: 'Verify',
+    verifying: 'Verifying…',
+    verifyDone: (n) => `${n} model${n>1?'s':''} verified`,
+    authIdentity: 'Self-report',
+    authIdentityMatch: 'Self-reported model matches',
+    authIdentityMismatch: 'Self-reported model differs',
+    authIdentityFail: 'Failed to parse identity',
+    authKnowledge: 'Knowledge probe',
+    authKnowledgePass: 'Knowledge boundary consistent',
+    authKnowledgeFail: 'Knowledge boundary inconsistent',
+    authKnowledgeSkip: 'No probes for this model',
+    authCapability: 'Capability test',
+    authCapabilityDetail: 'passed',
+    authInference: 'Bayesian inference',
+    authConfidence: 'confidence',
+    authLikelyModel: 'Most likely',
+    authVerifyProgress: (step, total) => `L${step}/${total} detecting...`,
+    authCutoff: 'Cutoff',
+    authReported: 'Reported',
   },
   zh: {
     title: '模型测试器',
@@ -945,6 +965,25 @@ const LANG = {
     authHeadersNone: '未检测到厂商响应头',
     authTps: 'tps',
     authExpected: '预期范围',
+    verify: '验证',
+    verifying: '验证中…',
+    verifyDone: (n) => `已验证 ${n} 个模型`,
+    authIdentity: '自报身份',
+    authIdentityMatch: '自报模型名匹配',
+    authIdentityMismatch: '自报模型名不一致',
+    authIdentityFail: '无法解析身份信息',
+    authKnowledge: '知识探测',
+    authKnowledgePass: '知识边界与声称一致',
+    authKnowledgeFail: '知识边界与声称不符',
+    authKnowledgeSkip: '无对应探测题',
+    authCapability: '能力测试',
+    authCapabilityDetail: '通过',
+    authInference: '贝叶斯推断',
+    authConfidence: '置信度',
+    authLikelyModel: '最可能是',
+    authVerifyProgress: (step, total) => `L${step}/${total} 检测中...`,
+    authCutoff: '截止日期',
+    authReported: '自报',
   }
 };
 
@@ -985,6 +1024,7 @@ function applyLang() {
   document.getElementById('lnkTextOnly').textContent = t('textOnly');
   document.getElementById('lnkClearHist').textContent = t('clearHistory');
   document.getElementById('btnTest').textContent = t('testSelected');
+  document.getElementById('btnVerify').textContent = t('verify');
   document.getElementById('lblConc').textContent = t('concurrency');
   document.getElementById('lblResults').textContent = t('results');
   document.getElementById('btnExpJson').textContent = t('exportJson');
@@ -1222,6 +1262,7 @@ function getChecked() {
 function onCheck() {
   const c=getChecked();
   document.getElementById('btnTest').disabled=c.length===0;
+  document.getElementById('btnVerify').disabled=c.length===0;
   document.getElementById('selectedCount').textContent=c.length?`${c.length} ${t('selected')}`:'';
 }
 
@@ -1455,6 +1496,543 @@ function renderAuthDetail(signals, rk) {
 function toggleAuthDetail(rk) {
   const el = document.getElementById('auth-detail-' + rk.replace(/[^a-zA-Z0-9]/g,'_'));
   if (el) el.classList.toggle('open');
+}
+
+// Render deep verification detail panel
+function renderDeepAuthDetail(r, rk) {
+  const dv = r.deepVerify;
+  if (!dv) return '';
+  const id = rk.replace(/[^a-zA-Z0-9]/g, '_');
+  let rows = '';
+
+  // L0+L1 signals (from Phase 1)
+  if (r.authSignals && r.authSignals.length > 0) {
+    for (const s of r.authSignals) {
+      let icon = '', label = '', value = '';
+      switch (s.type) {
+        case 'model_match':
+          icon = '<span style="color:var(--green)">&#10003;</span>';
+          label = t('authModelMatch');
+          value = s.detail;
+          break;
+        case 'model_mismatch':
+          icon = '<span style="color:var(--amber)">&#9888;</span>';
+          label = t('authModelMismatch');
+          value = `${t('authModelReturned')}: ${s.returned}`;
+          break;
+        case 'sys_fingerprint':
+          icon = s.level === 'ok' ? '<span style="color:var(--green)">&#10003;</span>' : s.value ? '<span style="color:var(--amber)">&#9888;</span>' : '<span style="color:var(--text4)">&#8212;</span>';
+          label = t('authSysFingerprint');
+          value = s.value ? (s.valid ? `${s.value}` : `${s.value} (${t('authSysFpInvalid')})`) : t('authSysFpNone');
+          break;
+        case 'headers':
+          icon = s.detected.length > 0 ? '<span style="color:var(--green)">&#10003;</span>' : '<span style="color:var(--text4)">&#8212;</span>';
+          label = t('authHeaders');
+          value = s.detected.length > 0 ? `${s.detected.length} headers` : t('authHeadersNone');
+          break;
+        case 'speed_ok':
+          icon = '<span style="color:var(--green)">&#10003;</span>';
+          label = t('authSpeedOk');
+          value = `${s.tps} ${t('authTps')} (≤${s.maxTps})`;
+          break;
+        case 'speed_fast':
+          icon = '<span style="color:var(--red)">&#10005;</span>';
+          label = t('authSpeedFast');
+          value = `${s.tps} ${t('authTps')} (≤${s.maxTps}, ${s.ratio}x)`;
+          break;
+        default: continue;
+      }
+      rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${label}</span><span class="signal-value">${esc(value)}</span></div>`;
+    }
+  }
+
+  // L2: Identity
+  if (dv.l2Result && !dv.l2Result.skip) {
+    const l2 = dv.l2Result;
+    const icon = l2.match ? '<span style="color:var(--green)">&#10003;</span>' : '<span style="color:var(--amber)">&#9888;</span>';
+    const label = t('authIdentity');
+    let value = l2.match ? t('authIdentityMatch') : t('authIdentityMismatch');
+    value += ` (${t('authReported')}: ${l2.reported || '?'})`;
+    if (l2.reportedCutoff) value += ` · ${t('authCutoff')}: ${l2.reportedCutoff}`;
+    rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${label}</span><span class="signal-value">${esc(value)}</span></div>`;
+  } else if (dv.l2Result && dv.l2Result.parseError) {
+    rows += `<div class="auth-detail-row"><span class="signal-icon"><span style="color:var(--text4)">&#8212;</span></span><span class="signal-label">${t('authIdentity')}</span><span class="signal-value">${t('authIdentityFail')}</span></div>`;
+  }
+
+  // L3: Knowledge
+  const l3Valid = dv.l3Results.filter(r => !r.skip);
+  if (l3Valid.length > 0) {
+    for (const kr of l3Valid) {
+      let icon, value;
+      if (kr.level === 'ok') {
+        icon = '<span style="color:var(--green)">&#10003;</span>';
+        value = `${kr.expected ? 'Should know' : 'Should not know'}: ${kr.got ? 'correct' : 'correct'} · "${kr.a}"`;
+      } else if (kr.level === 'warn') {
+        icon = '<span style="color:var(--red)">&#10005;</span>';
+        value = `Should know (${kr.date}) but failed · "${kr.a}"`;
+      } else {
+        icon = '<span style="color:var(--amber)">&#9888;</span>';
+        value = `Knows beyond cutoff (${kr.date}) · "${kr.a}"`;
+      }
+      rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${t('authKnowledge')}</span><span class="signal-value">${esc(value)}</span></div>`;
+    }
+  } else if (dv.l3Results.length > 0 && dv.l3Results[0].skip) {
+    rows += `<div class="auth-detail-row"><span class="signal-icon"><span style="color:var(--text4)">&#8212;</span></span><span class="signal-label">${t('authKnowledge')}</span><span class="signal-value">${t('authKnowledgeSkip')}</span></div>`;
+  }
+
+  // L4: Capability tests
+  if (dv.l4Result && dv.l4Result.testResults) {
+    const passed = dv.l4Result.testResults.filter(r => r.passed === true).length;
+    const total = dv.l4Result.testResults.filter(r => r.passed !== null).length;
+    const icon = passed >= total * 0.7 ? '<span style="color:var(--green)">&#10003;</span>' : passed >= total * 0.4 ? '<span style="color:var(--amber)">&#9888;</span>' : '<span style="color:var(--red)">&#10005;</span>';
+    const details = dv.l4Result.testResults.filter(r => r.passed !== null).map(r => `${r.name}:${r.passed ? '&#10003;' : '&#10005;'}`).join(' ');
+    rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${t('authCapability')}</span><span class="signal-value">${passed}/${total} ${t('authCapabilityDetail')} · ${details}</span></div>`;
+  }
+
+  // L4: Bayesian inference result
+  if (dv.l4Result && dv.l4Result.inference) {
+    const inf = dv.l4Result.inference;
+    const top3 = inf.sorted.slice(0, 3).map(([m, p]) => `${m} ${Math.round(p*100)}%`).join(', ');
+    const icon = dv.isClaimed ? '<span style="color:var(--green)">&#10003;</span>' : '<span style="color:var(--red)">&#10005;</span>';
+    rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${t('authInference')}</span><span class="signal-value">${t('authLikelyModel')}: ${esc(top3)}</span></div>`;
+  }
+
+  return `<div class="auth-detail" id="auth-detail-${id}">${rows}</div>`;
+}
+
+// ── Deep Verification (L2 + L3 + L4) ──
+
+const VERIFY_TIMEOUT_MS = 30000; // 30s per probe request
+
+async function verifyFetch(url, opts) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, { ...opts, signal: controller.signal });
+    return r;
+  } catch(e) {
+    if (e.name === 'AbortError') return { ok: false, _timeout: true };
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function verifyCall(base, key, model, messages, extraOpts = {}) {
+  const body = { model, messages, temperature: 0, max_tokens: 300, ...extraOpts };
+  const r = await verifyFetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) },
+    body: JSON.stringify(body)
+  });
+  if (r._timeout) return { _skip: true, reason: 'timeout' };
+  if (!r.ok) return { _skip: true, reason: `HTTP ${r.status}` };
+  const d = await r.json();
+  const content = d.choices?.[0]?.message?.content || '';
+  return { content, usage: d.usage };
+}
+
+// L2: Identity probe
+async function probeL2(base, key, model) {
+  const msg = { role: 'user', content: 'Reply with ONLY a JSON object (no markdown, no explanation):\n{"model":"your exact model name and version","maker":"company that created you","cutoff":"your training data cutoff date in YYYY-MM format","context_window":"your max context window in tokens as a number"}' };
+  const resp = await verifyCall(base, key, model, [msg]);
+  if (resp._skip) return { type: 'identity', level: 'neutral', skip: true, reason: resp.reason };
+
+  // Try to parse JSON from response
+  let parsed = null;
+  try {
+    // Extract JSON from possible markdown code block
+    let jsonStr = resp.content.trim();
+    const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/) || jsonStr.match(/(\{[\s\S]*\})/);
+    if (jsonMatch) jsonStr = jsonMatch[1].trim();
+    parsed = JSON.parse(jsonStr);
+  } catch(e) {
+    return { type: 'identity', level: 'neutral', raw: resp.content.slice(0, 200), parseError: true };
+  }
+
+  const reportedModel = (parsed.model || '').toLowerCase();
+  const reportedMaker = (parsed.maker || '').toLowerCase();
+  const reportedCutoff = parsed.cutoff || '';
+  const claimedNorm = normalizeModelId(model);
+
+  // Check if self-reported model matches claimed
+  let match = false;
+  if (reportedModel.includes(claimedNorm) || claimedNorm.includes(reportedModel)) match = true;
+  // Fuzzy: "gpt-4o" claimed, reports "gpt-4o-2024-08-06" — ok
+  if (!match && claimedNorm.startsWith('gpt-4') && reportedModel.includes('gpt-4')) match = true;
+  if (!match && claimedNorm.startsWith('gpt-3.5') && reportedModel.includes('gpt-3.5')) match = true;
+  if (!match && claimedNorm.includes('claude') && reportedModel.includes('claude')) {
+    // Check version match
+    if (claimedNorm.includes('opus') && reportedModel.includes('opus')) match = true;
+    if (claimedNorm.includes('sonnet') && reportedModel.includes('sonnet')) match = true;
+    if (claimedNorm.includes('haiku') && reportedModel.includes('haiku')) match = true;
+  }
+  if (!match && claimedNorm.includes('deepseek') && reportedModel.includes('deepseek')) match = true;
+
+  return {
+    type: 'identity',
+    level: match ? 'ok' : 'warn',
+    reported: parsed.model || resp.content.slice(0, 60),
+    reportedMaker,
+    reportedCutoff,
+    claimed: model,
+    match
+  };
+}
+
+// L3: Knowledge boundary probes
+const KNOWLEDGE_PROBES = {
+  'gpt-4': [
+    { q: 'What month and year was GPT-4 publicly released by OpenAI? Reply with just the month and year.', expect: /march\s*2023|2023.*march|2023-03|2023\.03/i, date: '2023-03', shouldKnow: true },
+    { q: 'What is the name of the AI video generation model OpenAI announced in February 2024?', expect: /sora/i, date: '2024-02', shouldKnow: false },
+  ],
+  'gpt-4-turbo': [
+    { q: 'What is the name of the AI video generation model OpenAI announced in February 2024?', expect: /sora/i, date: '2024-02', shouldKnow: true },
+    { q: 'What month was GPT-4o released?', expect: /may\s*2024|2024.*may|2024-05/i, date: '2024-05', shouldKnow: false },
+  ],
+  'gpt-4o': [
+    { q: 'What month was GPT-4o released by OpenAI?', expect: /may\s*2024|2024.*may|2024-05/i, date: '2024-05', shouldKnow: true },
+    { q: 'What is the name of OpenAI\'s reasoning model series released in September 2024?', expect: /o1/i, date: '2024-09', shouldKnow: true },
+    { q: 'What was the name of the model OpenAI released in December 2024 with full chain-of-thought reasoning?', expect: /o1|o3/i, date: '2024-12', shouldKnow: false },
+  ],
+  'gpt-4o-mini': [
+    { q: 'What month was GPT-4o-mini released?', expect: /july\s*2024|2024.*jul/i, date: '2024-07', shouldKnow: true },
+    { q: 'What is the name of OpenAI\'s reasoning model series released in September 2024?', expect: /o1/i, date: '2024-09', shouldKnow: true },
+  ],
+  'gpt-3.5-turbo': [
+    { q: 'What month and year was ChatGPT first released to the public?', expect: /november\s*2022|2022.*nov|2022-11/i, date: '2022-11', shouldKnow: false },
+    { q: 'Who won the 2022 FIFA World Cup?', expect: /argentin/i, date: '2022-12', shouldKnow: false },
+  ],
+  'claude-3-opus': [
+    { q: 'What month was Claude 3 released?', expect: /march\s*2024|2024.*march|2024-03/i, date: '2024-03', shouldKnow: true },
+    { q: 'What month was Claude 3.5 Sonnet released?', expect: /june\s*2024|2024.*jun|2024-06/i, date: '2024-06', shouldKnow: false },
+  ],
+  'claude-3.5-sonnet': [
+    { q: 'What month was Claude 3.5 Sonnet first released?', expect: /june\s*2024|2024.*jun|2024-06/i, date: '2024-06', shouldKnow: true },
+    { q: 'What is the name of Anthropic\'s computer use feature released in October 2024?', expect: /computer\s*use/i, date: '2024-10', shouldKnow: true },
+  ],
+  'claude-3-haiku': [
+    { q: 'What month was Claude 3 released?', expect: /march\s*2024|2024.*march|2024-03/i, date: '2024-03', shouldKnow: true },
+  ],
+  'deepseek-chat': [
+    { q: 'What is DeepSeek-V2\'s mixture-of-experts architecture called?', expect: /moe|mixture/i, date: '2024-05', shouldKnow: true },
+  ],
+  'deepseek-reasoner': [
+    { q: 'What month was DeepSeek-R1 released?', expect: /january\s*2025|2025.*jan|2025-01/i, date: '2025-01', shouldKnow: true },
+  ],
+};
+
+function findKnowledgeProbes(modelId) {
+  const n = normalizeModelId(modelId);
+  if (KNOWLEDGE_PROBES[n]) return KNOWLEDGE_PROBES[n];
+  const keys = Object.keys(KNOWLEDGE_PROBES).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    if (n.startsWith(k) || n.includes(k)) return KNOWLEDGE_PROBES[k];
+  }
+  return null;
+}
+
+async function probeL3(base, key, model) {
+  const probes = findKnowledgeProbes(model);
+  if (!probes) return [{ type: 'knowledge', level: 'neutral', skip: true }];
+
+  const results = [];
+  for (const probe of probes) {
+    const resp = await verifyCall(base, key, model, [{ role: 'user', content: probe.q }]);
+    if (resp._skip) {
+      results.push({ type: 'knowledge', level: 'neutral', skip: true, reason: resp.reason, q: probe.q });
+      continue;
+    }
+    const answer = resp.content.trim();
+    const matches = probe.expect.test(answer);
+
+    if (probe.shouldKnow) {
+      // Model should know this — if it doesn't, suspicious
+      results.push({
+        type: 'knowledge',
+        level: matches ? 'ok' : 'warn',
+        q: probe.q,
+        a: answer.slice(0, 100),
+        expected: true,
+        got: matches,
+        date: probe.date
+      });
+    } else {
+      // Model should NOT know this — if it does, might be a newer model (not necessarily bad)
+      // If it doesn't know, consistent with claimed model
+      results.push({
+        type: 'knowledge',
+        level: matches ? 'info' : 'ok',
+        q: probe.q,
+        a: answer.slice(0, 100),
+        expected: false,
+        got: matches,
+        date: probe.date
+      });
+    }
+  }
+  return results;
+}
+
+// L4: Capability fingerprint tests
+const CAPABILITY_TESTS = [
+  {
+    name: 'reasoning_cn',
+    prompt: '一个房间里有100个杀手，你进去杀了1个，请问房间里还有几个杀手？只回答数字，不要解释。',
+    check: (r) => /^100$/.test(r.trim()),
+    weights: { 'gpt-4': 0.90, 'gpt-4-turbo': 0.88, 'gpt-4o': 0.88, 'gpt-4o-mini': 0.70, 'gpt-3.5-turbo': 0.25, 'claude-3-opus': 0.92, 'claude-3.5-sonnet': 0.90, 'claude-3-haiku': 0.50, 'deepseek-chat': 0.75, 'deepseek-reasoner': 0.92 }
+  },
+  {
+    name: 'instruction_en',
+    prompt: 'Reply with EXACTLY 5 words (no more, no less): What color is the sky?',
+    check: (r) => { const words = r.trim().replace(/[.!?,;:]/g, '').split(/\s+/).filter(w => w.length > 0); return words.length === 5; },
+    weights: { 'gpt-4': 0.82, 'gpt-4-turbo': 0.80, 'gpt-4o': 0.82, 'gpt-4o-mini': 0.70, 'gpt-3.5-turbo': 0.30, 'claude-3-opus': 0.85, 'claude-3.5-sonnet': 0.83, 'claude-3-haiku': 0.45, 'deepseek-chat': 0.60, 'deepseek-reasoner': 0.80 }
+  },
+  {
+    name: 'json_strict',
+    prompt: 'Output ONLY a JSON object (no markdown, no explanation): {"primes_under_20": [list all prime numbers less than 20], "count": the number of primes}',
+    check: (r) => {
+      try {
+        let s = r.trim();
+        const m = s.match(/```(?:json)?\s*([\s\S]*?)```/) || s.match(/(\{[\s\S]*\})/);
+        if (m) s = m[1].trim();
+        const j = JSON.parse(s);
+        const expected = [2,3,5,7,11,13,17,19];
+        return JSON.stringify(j.primes_under_20) === JSON.stringify(expected) && j.count === 8;
+      } catch { return false; }
+    },
+    weights: { 'gpt-4': 0.88, 'gpt-4-turbo': 0.87, 'gpt-4o': 0.90, 'gpt-4o-mini': 0.80, 'gpt-3.5-turbo': 0.45, 'claude-3-opus': 0.90, 'claude-3.5-sonnet': 0.88, 'claude-3-haiku': 0.55, 'deepseek-chat': 0.70, 'deepseek-reasoner': 0.85 }
+  },
+  {
+    name: 'reasoning_en',
+    prompt: 'A farmer has 17 sheep. All but 9 die. How many sheep are left? Reply with just the number.',
+    check: (r) => /^9$/.test(r.trim()),
+    weights: { 'gpt-4': 0.95, 'gpt-4-turbo': 0.93, 'gpt-4o': 0.94, 'gpt-4o-mini': 0.80, 'gpt-3.5-turbo': 0.45, 'claude-3-opus': 0.95, 'claude-3.5-sonnet': 0.93, 'claude-3-haiku': 0.60, 'deepseek-chat': 0.75, 'deepseek-reasoner': 0.93 }
+  },
+  {
+    name: 'instruction_cn',
+    prompt: '请用恰好7个汉字回答：中国的首都是哪里？只输出7个汉字，不要标点。',
+    check: (r) => {
+      const clean = r.trim().replace(/[，。！？、；：""''（）\s\n]/g, '');
+      return clean.length === 7;
+    },
+    weights: { 'gpt-4': 0.70, 'gpt-4-turbo': 0.68, 'gpt-4o': 0.72, 'gpt-4o-mini': 0.55, 'gpt-3.5-turbo': 0.20, 'claude-3-opus': 0.72, 'claude-3.5-sonnet': 0.70, 'claude-3-haiku': 0.30, 'deepseek-chat': 0.65, 'deepseek-reasoner': 0.70 }
+  },
+];
+
+// Bayesian inference
+const MODEL_CANDIDATES = ['gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3.5-sonnet', 'claude-3-haiku', 'deepseek-chat', 'deepseek-reasoner'];
+
+function bayesianInference(testResults, claimedModel) {
+  // Prior: slightly favor the claimed model
+  const priors = {};
+  const claimedNorm = normalizeModelId(claimedModel);
+  for (const m of MODEL_CANDIDATES) {
+    priors[m] = (m === claimedNorm || claimedNorm.startsWith(m) || claimedNorm.includes(m)) ? 0.4 : (0.6 / (MODEL_CANDIDATES.length - 1));
+  }
+
+  const logScores = {};
+  for (const m of MODEL_CANDIDATES) {
+    let logP = Math.log(priors[m] || 0.05);
+    for (const result of testResults) {
+      const w = result.weights[m] || 0.5;
+      logP += result.passed ? Math.log(w + 0.001) : Math.log(1 - w + 0.001);
+    }
+    logScores[m] = logP;
+  }
+
+  // Softmax normalization
+  const maxLog = Math.max(...Object.values(logScores));
+  const expScores = {};
+  let sum = 0;
+  for (const [m, s] of Object.entries(logScores)) {
+    expScores[m] = Math.exp(s - maxLog);
+    sum += expScores[m];
+  }
+
+  const posteriors = {};
+  for (const [m, s] of Object.entries(expScores)) {
+    posteriors[m] = s / sum;
+  }
+
+  // Sort by probability
+  const sorted = Object.entries(posteriors).sort((a, b) => b[1] - a[1]);
+  return { posteriors, sorted, top: sorted[0] };
+}
+
+async function probeL4(base, key, model) {
+  const testResults = [];
+  for (const test of CAPABILITY_TESTS) {
+    const resp = await verifyCall(base, key, model, [{ role: 'user', content: test.prompt }]);
+    if (resp._skip) {
+      testResults.push({ name: test.name, passed: null, skip: true, weights: test.weights });
+      continue;
+    }
+    const passed = test.check(resp.content);
+    testResults.push({ name: test.name, passed, answer: resp.content.slice(0, 80), weights: test.weights });
+  }
+
+  // Run Bayesian inference on non-skipped results
+  const validResults = testResults.filter(r => r.passed !== null);
+  let inference = null;
+  if (validResults.length >= 2) {
+    inference = bayesianInference(validResults, model);
+  }
+
+  return { testResults, inference };
+}
+
+// Combined deep verification verdict
+function computeDeepVerdict(l0l1Signals, l2Result, l3Results, l4Result, claimedModel) {
+  const signals = [...(l0l1Signals || [])];
+  const claimedNorm = normalizeModelId(claimedModel);
+
+  // Add L2 signal
+  if (l2Result && !l2Result.skip) {
+    signals.push(l2Result);
+  }
+
+  // Add L3 signals
+  if (l3Results) {
+    for (const r of l3Results) {
+      if (!r.skip) signals.push(r);
+    }
+  }
+
+  // Compute confidence from L4 Bayesian inference
+  let confidence = null;
+  let likelyModel = null;
+  let isClaimed = true;
+
+  if (l4Result && l4Result.inference) {
+    const { top, posteriors } = l4Result.inference;
+    likelyModel = top[0];
+    confidence = Math.round(top[1] * 100);
+
+    // Check if the most likely model matches the claimed model
+    isClaimed = (likelyModel === claimedNorm || claimedNorm.startsWith(likelyModel) || claimedNorm.includes(likelyModel) || likelyModel.includes(claimedNorm));
+
+    // Also check if claimed model is in top 2
+    if (!isClaimed && l4Result.inference.sorted.length > 1) {
+      const second = l4Result.inference.sorted[1];
+      const secondModel = second[0];
+      if (secondModel === claimedNorm || claimedNorm.startsWith(secondModel) || claimedNorm.includes(secondModel)) {
+        // Claimed model is second — less suspicious
+        if (second[1] > 0.25) isClaimed = true;
+      }
+    }
+  }
+
+  // Determine overall verdict
+  let verdict = 'ok';
+  let verdictConfidence = confidence;
+
+  // L3 knowledge failures are strong signals
+  const knowledgeFails = (l3Results || []).filter(r => !r.skip && r.level === 'warn');
+  if (knowledgeFails.length > 0) verdict = 'warn';
+
+  // L2 identity mismatch
+  if (l2Result && !l2Result.skip && l2Result.level === 'warn') {
+    if (verdict === 'ok') verdict = 'warn';
+  }
+
+  // L4 inference says different model
+  if (confidence !== null && !isClaimed) {
+    if (confidence >= 60) verdict = 'fail';
+    else if (confidence >= 40) verdict = 'warn';
+  }
+
+  // Speed too fast from L0/L1 compounds the verdict
+  const speedFast = (l0l1Signals || []).find(s => s.type === 'speed_fast');
+  if (speedFast && verdict === 'warn') {
+    if (parseFloat(speedFast.ratio) >= 1.8) verdict = 'fail';
+  }
+
+  return {
+    verdict,
+    confidence: verdictConfidence,
+    likelyModel,
+    isClaimed,
+    l2Result,
+    l3Results: l3Results || [],
+    l4Result,
+    signals
+  };
+}
+
+// Main verify function
+async function verifySelected() {
+  const sel = getChecked();
+  if (!sel.length) return;
+  const btn = document.getElementById('btnVerify');
+  btn.disabled = true; btn.textContent = t('verifying');
+  document.getElementById('btnTest').disabled = true;
+  document.getElementById('resultsSection').style.display = 'block';
+
+  const concurrency = parseInt(document.getElementById('concSelect').value) || 3;
+
+  // Initialize results if not already present
+  for (const s of sel) {
+    const k = `${s.id}::${s.channelId}`;
+    if (!results[k]) {
+      results[k] = { id: s.id, ch: s.channelId, chat: 'idle', tool: 'idle', ttft: '', total: '', resp: '', ce: '', toolName: '', toolArgs: '', te: '', tokens: '', auth: 'idle', authSignals: [], authVerdict: '' };
+    }
+    results[k].deepVerify = null;
+    results[k].auth = 'running';
+  }
+  renderResults();
+
+  async function verifyOne(s) {
+    const ch = channels[s.channelId], base = normUrl(ch.baseUrl), key = ch.apiKey;
+    const rk = `${s.id}::${s.channelId}`;
+
+    // Progress update helper
+    function setProgress(step, total) {
+      results[rk]._verifyProgress = LANG[curLang].authVerifyProgress(step, total);
+      renderResults();
+    }
+
+    setProgress(2, 5);
+    // L2: Identity probe
+    const l2Result = await probeL2(base, key, s.id);
+
+    setProgress(3, 5);
+    // L3: Knowledge boundary
+    const l3Results = await probeL3(base, key, s.id);
+
+    setProgress(4, 5);
+    // L4: Capability fingerprint
+    const l4Result = await probeL4(base, key, s.id);
+
+    setProgress(5, 5);
+    // Compute combined verdict
+    const existingSignals = results[rk].authSignals || [];
+    const deepResult = computeDeepVerdict(existingSignals, l2Result, l3Results, l4Result, s.id);
+
+    results[rk].deepVerify = deepResult;
+    results[rk].authVerdict = deepResult.verdict;
+    results[rk].auth = deepResult.verdict;
+    results[rk]._verifyProgress = null;
+
+    // Update history
+    const hk = rk;
+    if (testHistory[hk]) {
+      testHistory[hk].auth = deepResult.verdict;
+      testHistory[hk].authConfidence = deepResult.confidence;
+      testHistory[hk].authLikelyModel = deepResult.likelyModel;
+      localStorage.setItem('mt_testHistory', JSON.stringify(testHistory));
+    }
+
+    renderResults();
+  }
+
+  const tasks = sel.map(s => () => verifyOne(s));
+  await runPool(tasks, concurrency);
+
+  btn.disabled = false; btn.textContent = t('verify');
+  document.getElementById('btnTest').disabled = false;
+  onCheck();
+  toast(LANG[curLang].verifyDone(sel.length));
 }
 
 // ── End Authenticity Detection ──
@@ -1692,6 +2270,23 @@ function renderResults() {
         authCell = `<span class="auth-badge auth-badge--na">${t('authNa')}</span>`;
       } else if (r.auth === 'na') {
         authCell = `<span class="auth-badge auth-badge--na">${t('authNa')}</span>`;
+      } else if (r.auth === 'running') {
+        const prog = r._verifyProgress || t('verifying');
+        authCell = `<span class="auth-badge auth-badge--na"><span class="spin" style="width:10px;height:10px;border-width:1.5px;"></span> ${esc(prog)}</span>`;
+      } else if (r.deepVerify) {
+        // Deep verification complete — show confidence
+        const dv = r.deepVerify;
+        const authCls = dv.verdict === 'ok' ? 'ok' : dv.verdict === 'warn' ? 'warn' : 'fail';
+        const authLabel = dv.verdict === 'ok' ? t('authOk') : dv.verdict === 'warn' ? t('authWarn') : t('authFail');
+        let confText = '';
+        if (dv.confidence !== null && dv.likelyModel) {
+          if (dv.isClaimed) {
+            confText = `<div style="font-size:11px;color:var(--text3);margin-top:2px;">${dv.confidence}% ${t('authConfidence')}</div>`;
+          } else {
+            confText = `<div style="font-size:11px;color:var(--red);margin-top:2px;">${dv.confidence}% → ${esc(dv.likelyModel)}</div>`;
+          }
+        }
+        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${confText}${renderDeepAuthDetail(r, rk)}`;
       } else {
         const authCls = r.auth === 'ok' ? 'ok' : r.auth === 'warn' ? 'warn' : 'fail';
         const authLabel = r.auth === 'ok' ? t('authOk') : r.auth === 'warn' ? t('authWarn') : t('authFail');
@@ -1731,6 +2326,7 @@ function clearAll(){
   document.getElementById('resultsBody').innerHTML='';
   document.getElementById('progressWrap').classList.remove('on');
   document.getElementById('btnTest').disabled=true;
+  document.getElementById('btnVerify').disabled=true;
   document.getElementById('selectedCount').textContent='';
   document.getElementById('btnFetch').disabled=false;
   document.getElementById('btnFetch').textContent=t('fetchModels');
@@ -1760,7 +2356,10 @@ function exportResults(format) {
         toolTotal: r.toolTotal,
         toolError: r.te,
         authenticity: r.authVerdict || '',
-        authSignals: r.authSignals || []
+        authSignals: r.authSignals || [],
+        authConfidence: r.deepVerify ? r.deepVerify.confidence : null,
+        authLikelyModel: r.deepVerify ? r.deepVerify.likelyModel : null,
+        authIsClaimed: r.deepVerify ? r.deepVerify.isClaimed : null
       };
     });
     blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
