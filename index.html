@@ -1077,10 +1077,6 @@ const LANG = {
     verify: 'Authenticity Check',
     verifying: 'Checking…',
     verifyDone: (n) => `${n} model${n>1?'s':''} verified`,
-    authIdentity: 'Self-report',
-    authIdentityMatch: 'Self-reported model matches',
-    authIdentityMismatch: 'Self-reported model differs',
-    authIdentityFail: 'Failed to parse identity',
     authKnowledge: 'Knowledge probe',
     authKnowledgePass: 'Knowledge boundary consistent',
     authKnowledgeFail: 'Knowledge boundary inconsistent',
@@ -1100,7 +1096,6 @@ const LANG = {
     compareL0Model: 'L0 Model field',
     compareL0Speed: 'L1 Speed',
     compareL0Headers: 'L0 Headers',
-    compareL2Identity: 'L2 Identity',
     compareL3Knowledge: 'L3 Knowledge',
     compareL4Capability: 'L4 Capability',
     compareVerdict: 'Verdict',
@@ -1189,10 +1184,6 @@ const LANG = {
     verify: '真伪鉴定',
     verifying: '鉴定中…',
     verifyDone: (n) => `已验证 ${n} 个模型`,
-    authIdentity: '自报身份',
-    authIdentityMatch: '自报模型名匹配',
-    authIdentityMismatch: '自报模型名不一致',
-    authIdentityFail: '无法解析身份信息',
     authKnowledge: '知识探测',
     authKnowledgePass: '知识边界与声称一致',
     authKnowledgeFail: '知识边界与声称不符',
@@ -1212,7 +1203,6 @@ const LANG = {
     compareL0Model: 'L0 模型字段',
     compareL0Speed: 'L1 速度',
     compareL0Headers: 'L0 响应头',
-    compareL2Identity: 'L2 身份',
     compareL3Knowledge: 'L3 知识',
     compareL4Capability: 'L4 能力',
     compareVerdict: '综合判定',
@@ -1796,19 +1786,6 @@ function renderDeepAuthDetail(r, rk) {
     }
   }
 
-  // L2: Identity
-  if (dv.l2Result && !dv.l2Result.skip) {
-    const l2 = dv.l2Result;
-    const icon = l2.match ? '<span style="color:var(--green)">&#10003;</span>' : '<span style="color:var(--amber)">&#9888;</span>';
-    const label = t('authIdentity');
-    let value = l2.match ? t('authIdentityMatch') : t('authIdentityMismatch');
-    value += ` (${t('authReported')}: ${l2.reported || '?'})`;
-    if (l2.reportedCutoff) value += ` · ${t('authCutoff')}: ${l2.reportedCutoff}`;
-    rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${label}</span><span class="signal-value">${esc(value)}</span></div>`;
-  } else if (dv.l2Result && dv.l2Result.parseError) {
-    rows += `<div class="auth-detail-row"><span class="signal-icon"><span style="color:var(--text4)">&#8212;</span></span><span class="signal-label">${t('authIdentity')}</span><span class="signal-value">${t('authIdentityFail')}</span></div>`;
-  }
-
   // L3: Knowledge
   const l3Valid = dv.l3Results.filter(r => !r.skip);
   if (l3Valid.length > 0) {
@@ -1842,7 +1819,7 @@ function renderDeepAuthDetail(r, rk) {
   return `<div class="auth-detail" id="auth-detail-${id}">${rows}</div>`;
 }
 
-// ── Deep Verification (L2 + L3 + L4) ──
+// ── Deep Verification (L3 + L4) ──
 
 const VERIFY_TIMEOUT_MS = 30000; // 30s per probe request
 
@@ -1872,54 +1849,6 @@ async function verifyCall(base, key, model, messages, extraOpts = {}) {
   const d = await r.json();
   const content = d.choices?.[0]?.message?.content || '';
   return { content, usage: d.usage };
-}
-
-// L2: Identity probe
-async function probeL2(base, key, model) {
-  const msg = { role: 'user', content: 'Reply with ONLY a JSON object (no markdown, no explanation):\n{"model":"your exact model name and version","maker":"company that created you","cutoff":"your training data cutoff date in YYYY-MM format","context_window":"your max context window in tokens as a number"}' };
-  const resp = await verifyCall(base, key, model, [msg]);
-  if (resp._skip) return { type: 'identity', level: 'neutral', skip: true, reason: resp.reason };
-
-  // Try to parse JSON from response
-  let parsed = null;
-  try {
-    // Extract JSON from possible markdown code block
-    let jsonStr = resp.content.trim();
-    const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/) || jsonStr.match(/(\{[\s\S]*\})/);
-    if (jsonMatch) jsonStr = jsonMatch[1].trim();
-    parsed = JSON.parse(jsonStr);
-  } catch(e) {
-    return { type: 'identity', level: 'neutral', raw: resp.content.slice(0, 200), parseError: true };
-  }
-
-  const reportedModel = (parsed.model || '').toLowerCase();
-  const reportedMaker = (parsed.maker || '').toLowerCase();
-  const reportedCutoff = parsed.cutoff || '';
-  const claimedNorm = normalizeModelId(model);
-
-  // Check if self-reported model matches claimed
-  let match = false;
-  if (reportedModel.includes(claimedNorm) || claimedNorm.includes(reportedModel)) match = true;
-  // Fuzzy: "gpt-4o" claimed, reports "gpt-4o-2024-08-06" — ok
-  if (!match && claimedNorm.startsWith('gpt-4') && reportedModel.includes('gpt-4')) match = true;
-  if (!match && claimedNorm.startsWith('gpt-3.5') && reportedModel.includes('gpt-3.5')) match = true;
-  if (!match && claimedNorm.includes('claude') && reportedModel.includes('claude')) {
-    // Check version match
-    if (claimedNorm.includes('opus') && reportedModel.includes('opus')) match = true;
-    if (claimedNorm.includes('sonnet') && reportedModel.includes('sonnet')) match = true;
-    if (claimedNorm.includes('haiku') && reportedModel.includes('haiku')) match = true;
-  }
-  if (!match && claimedNorm.includes('deepseek') && reportedModel.includes('deepseek')) match = true;
-
-  return {
-    type: 'identity',
-    level: match ? 'ok' : 'warn',
-    reported: parsed.model || resp.content.slice(0, 60),
-    reportedMaker,
-    reportedCutoff,
-    claimed: model,
-    match
-  };
 }
 
 // L3: Knowledge boundary probes
@@ -2097,11 +2026,7 @@ function computeDeepVerdict(l0l1Signals, l2Result, l3Results, l4Result, claimedM
     }
   }
 
-  // L2: Identity mismatch → +2
-  if (l2Result && !l2Result.skip && !l2Result.match) {
-    score += 2;
-    breakdown.push({ label: curLang === 'zh' ? '身份不符' : 'Identity mismatch', points: 2 });
-  }
+  // L2: (removed — self-report unreliable)
 
   // L3: Knowledge boundary fails → +2 each
   const l3Fails = (l3Results || []).filter(r => !r.skip && r.level === 'warn');
@@ -2131,7 +2056,6 @@ function computeDeepVerdict(l0l1Signals, l2Result, l3Results, l4Result, claimedM
     verdict,
     score,
     breakdown,
-    l2Result,
     l3Results: l3Results || [],
     l4Result,
     signals: [...(l0l1Signals || [])]
@@ -2170,22 +2094,18 @@ async function verifySelected() {
       renderResults();
     }
 
-    setProgress(2, 5);
-    // L2: Identity probe
-    const l2Result = await probeL2(base, key, s.id);
-
-    setProgress(3, 5);
+    setProgress(2, 4);
     // L3: Knowledge boundary
     const l3Results = await probeL3(base, key, s.id);
 
-    setProgress(4, 5);
+    setProgress(3, 4);
     // L4: Capability fingerprint
     const l4Result = await probeL4(base, key, s.id);
 
-    setProgress(5, 5);
+    setProgress(4, 4);
     // Compute combined verdict
     const existingSignals = results[rk].authSignals || [];
-    const deepResult = computeDeepVerdict(existingSignals, l2Result, l3Results, l4Result, s.id);
+    const deepResult = computeDeepVerdict(existingSignals, null, l3Results, l4Result, s.id);
 
     results[rk].deepVerify = deepResult;
     results[rk].authVerdict = deepResult.verdict;
@@ -2626,7 +2546,6 @@ function renderCompareTable() {
     { key: 'l0model', label: t('compareL0Model') },
     { key: 'l1speed', label: t('compareL0Speed') },
     { key: 'l0headers', label: t('compareL0Headers') },
-    { key: 'l2identity', label: t('compareL2Identity') },
     { key: 'l3knowledge', label: t('compareL3Knowledge') },
     { key: 'l4capability', label: t('compareL4Capability') },
     { key: 'verdict', label: t('compareVerdict') },
@@ -2656,12 +2575,6 @@ function renderCompareTable() {
         return s.detected.length > 0
           ? { cls: 'cmp-ok', text: `${s.detected.length}` }
           : { cls: 'cmp-na', text: '—' };
-      }
-      case 'l2identity': {
-        if (!dv || !dv.l2Result || dv.l2Result.skip) return { cls: 'cmp-na', text: '—' };
-        return dv.l2Result.match
-          ? { cls: 'cmp-ok', text: '&#10003;' }
-          : { cls: 'cmp-warn', text: esc((dv.l2Result.reported || '').slice(0, 20)) };
       }
       case 'l3knowledge': {
         if (!dv || !dv.l3Results || dv.l3Results.length === 0 || dv.l3Results[0].skip) return { cls: 'cmp-na', text: '—' };
