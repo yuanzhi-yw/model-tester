@@ -1140,6 +1140,22 @@ async function testSelected() {
   let done=0; const total=sel.length*2;
   function tick(){done++;pb.style.width=`${(done/total)*100}%`;}
 
+  const TEST_TIMEOUT_MS = 100000; // 100秒超时
+
+  async function fetchWithTimeout(url, opts, timeoutMs = TEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, { ...opts, signal: controller.signal });
+      return r;
+    } catch(e) {
+      if (e.name === 'AbortError') throw new Error('Timeout: 请求超过100秒未响应');
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function testOne(s) {
     const ch=channels[s.channelId], base=normUrl(ch.baseUrl), key=ch.apiKey, rk=`${s.id}::${s.channelId}`;
 
@@ -1150,7 +1166,7 @@ async function testSelected() {
       let r;
       let usedStreamOpts = true;
       try {
-        r = await fetch(`${base}/chat/completions`,{
+        r = await fetchWithTimeout(`${base}/chat/completions`,{
           method:'POST',
           headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
           body:JSON.stringify({model:s.id,messages:[{role:'user',content:'Say exactly: hello'}],max_tokens:50,stream:true,stream_options:{include_usage:true}})
@@ -1160,7 +1176,7 @@ async function testSelected() {
       }
       if (!r.ok && usedStreamOpts) {
         const errText = await r.text().catch(()=>'');
-        const r2 = await fetch(`${base}/chat/completions`,{
+        const r2 = await fetchWithTimeout(`${base}/chat/completions`,{
           method:'POST',
           headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
           body:JSON.stringify({model:s.id,messages:[{role:'user',content:'Say exactly: hello'}],max_tokens:50,stream:true})
@@ -1171,7 +1187,9 @@ async function testSelected() {
       if(!r.ok){const e=await r.text().catch(()=>'');throw new Error(`HTTP ${r.status}: ${e.slice(0,150)}`)}
       const reader=r.body.getReader(),decoder=new TextDecoder();
       let ttft=0, content='', usage=null, buf='', streamDone=false;
+      const streamDeadline = performance.now() + TEST_TIMEOUT_MS;
       while(!streamDone){
+        if(performance.now() > streamDeadline){ reader.cancel(); throw new Error('Timeout: 流式响应超过100秒未完成'); }
         const{value,done:d}=await reader.read(); streamDone=d;
         if(value){ buf+=decoder.decode(value,{stream:!d});
           const lines=buf.split('\n'); buf=lines.pop()||'';
@@ -1206,7 +1224,7 @@ async function testSelected() {
     results[rk].tool='running'; renderResults();
     const t1=performance.now();
     try {
-      const r=await fetch(`${base}/chat/completions`,{
+      const r=await fetchWithTimeout(`${base}/chat/completions`,{
         method:'POST',
         headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
         body:JSON.stringify({model:s.id,messages:[{role:'user',content:'What is the weather in Beijing?'}],tools:[{type:'function',function:{name:'get_weather',description:'Get weather for a city',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}}],tool_choice:{type:'function',function:{name:'get_weather'}},max_tokens:200})
@@ -1220,7 +1238,7 @@ async function testSelected() {
         results[rk].toolName=tcs[0].function?.name||'(unnamed)';
         try{results[rk].toolArgs=JSON.stringify(JSON.parse(tcs[0].function?.arguments||'{}'));}catch(_){results[rk].toolArgs=tcs[0].function?.arguments||''}
       }else if(chc?.message?.content){
-        const r2=await fetch(`${base}/chat/completions`,{
+        const r2=await fetchWithTimeout(`${base}/chat/completions`,{
           method:'POST',
           headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
           body:JSON.stringify({model:s.id,messages:[{role:'user',content:'What is the weather in Beijing? Use the get_weather tool.'}],tools:[{type:'function',function:{name:'get_weather',description:'Get weather for a city',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}}],tool_choice:'auto',max_tokens:200})
@@ -1245,7 +1263,7 @@ async function testSelected() {
       if(!results[rk].toolTotal) results[rk].toolTotal=`${ms}ms`;
     }catch(e){
       try {
-        const r2=await fetch(`${base}/chat/completions`,{
+        const r2=await fetchWithTimeout(`${base}/chat/completions`,{
           method:'POST',
           headers:{'Content-Type':'application/json',...(key?{Authorization:`Bearer ${key}`}:{})},
           body:JSON.stringify({model:s.id,messages:[{role:'user',content:'What is the weather in Beijing? Use the get_weather tool.'}],tools:[{type:'function',function:{name:'get_weather',description:'Get weather for a city',parameters:{type:'object',properties:{city:{type:'string'}},required:['city']}}}],tool_choice:'auto',max_tokens:200})
