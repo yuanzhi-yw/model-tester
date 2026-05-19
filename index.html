@@ -617,6 +617,210 @@
     word-break: break-all;
   }
 
+  /* Compare view modal */
+  .compare-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .compare-overlay.open { display: flex; }
+  .compare-modal {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    max-width: 95vw;
+    max-height: 85vh;
+    overflow: auto;
+    padding: 32px;
+    position: relative;
+  }
+  .compare-modal h2 {
+    font-size: 20px;
+    font-weight: 510;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+  .compare-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text3);
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+  }
+  .compare-close:hover { color: var(--text); background: var(--hover); }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 500px;
+  }
+  .compare-table th, .compare-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+  }
+  .compare-table th {
+    background: var(--panel);
+    font-weight: 510;
+    color: var(--text3);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+  }
+  .compare-table th:first-child { text-align: left; }
+  .compare-table td:first-child {
+    text-align: left;
+    font-weight: 510;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+  .compare-table .cmp-ok { color: var(--green); }
+  .compare-table .cmp-warn { color: var(--amber); }
+  .compare-table .cmp-fail { color: var(--red); }
+  .compare-table .cmp-na { color: var(--text4); }
+  .compare-verdict {
+    font-weight: 510;
+    font-size: 13px;
+  }
+  .compare-model-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .compare-model-tab {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text3);
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.12s;
+  }
+  .compare-model-tab:hover { background: var(--hover); }
+  .compare-model-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Confidence bar */
+  .conf-bar-wrap {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .conf-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text4);
+  }
+  .conf-bar-label {
+    min-width: 70px;
+    font-family: var(--mono);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .conf-bar {
+    height: 6px;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    position: relative;
+  }
+  .conf-bar-pct {
+    min-width: 28px;
+    text-align: left;
+  }
+
+  /* History timeline */
+  .history-panel {
+    display: none;
+    padding: 10px 12px;
+    margin-top: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .history-panel.open { display: block; }
+  .history-timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 8px 0;
+    overflow-x: auto;
+  }
+  .history-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    cursor: default;
+  }
+  .history-line {
+    width: 16px;
+    height: 2px;
+    background: var(--border2);
+    flex-shrink: 0;
+  }
+  .history-dot[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    white-space: nowrap;
+    color: var(--text2);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .history-meta {
+    font-size: 11px;
+    color: var(--text4);
+    margin-top: 4px;
+  }
+  .history-alert {
+    font-size: 11px;
+    color: var(--red);
+    margin-top: 4px;
+    font-weight: 510;
+  }
+
+  /* Fingerprint section */
+  .fp-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -776,6 +980,7 @@
     <div class="section-header">
       <div class="section-label" id="lblResults">Results</div>
       <div class="section-header-actions">
+        <button class="btn btn--ghost btn--tiny" onclick="openCompare()" id="btnCompare">Compare</button>
         <button class="btn btn--ghost btn--tiny" onclick="exportResults('json')" id="btnExpJson">Export JSON</button>
         <button class="btn btn--ghost btn--tiny" onclick="exportResults('csv')" id="btnExpCsv">Export CSV</button>
       </div>
@@ -792,9 +997,26 @@
     <strong>CORS</strong> — If the browser blocks requests, use an extension or local proxy.
     Channels persist in <code>localStorage</code>. Export saves API keys in plain text.
   </div>
+  <div class="fp-section">
+    <div class="action-row">
+      <button class="btn btn--ghost btn--sm" onclick="exportFingerprints()" id="btnFpExport">Export fingerprints</button>
+      <button class="btn btn--ghost btn--sm" onclick="document.getElementById('fpImportFile').click()" id="btnFpImport">Import fingerprints</button>
+      <input type="file" id="fpImportFile" accept=".json" style="display:none" onchange="importFingerprints(this)">
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Compare View Modal -->
+<div class="compare-overlay" id="compareOverlay" onclick="if(event.target===this)closeCompare()">
+  <div class="compare-modal">
+    <button class="compare-close" onclick="closeCompare()">&times;</button>
+    <h2 id="compareTitle">Compare Channels</h2>
+    <div class="compare-model-tabs" id="compareTabs"></div>
+    <div class="table-wrap" id="compareContent"></div>
+  </div>
+</div>
 
 <script>
 // ── i18n ──
@@ -891,6 +1113,25 @@ const LANG = {
     authVerifyProgress: (step, total) => `L${step}/${total} detecting...`,
     authCutoff: 'Cutoff',
     authReported: 'Reported',
+    compare: 'Compare',
+    compareTitle: 'Channel Comparison',
+    compareNoData: 'No multi-channel models with results to compare',
+    compareDimension: 'Dimension',
+    compareL0Model: 'L0 Model field',
+    compareL0Speed: 'L1 Speed',
+    compareL0Headers: 'L0 Headers',
+    compareL2Identity: 'L2 Identity',
+    compareL3Knowledge: 'L3 Knowledge',
+    compareL4Capability: 'L4 Capability',
+    compareVerdict: 'Verdict',
+    fpExport: 'Export fingerprints',
+    fpImport: 'Import fingerprints',
+    fpExported: 'Fingerprint library exported',
+    fpImported: (n) => `Imported ${n} fingerprint entries`,
+    fpImportFailed: 'Import failed: invalid format',
+    historyTitle: 'History',
+    historyDegraded: 'Quality degraded',
+    historyNoData: 'No history',
   },
   zh: {
     title: '模型测试器',
@@ -984,6 +1225,25 @@ const LANG = {
     authVerifyProgress: (step, total) => `L${step}/${total} 检测中...`,
     authCutoff: '截止日期',
     authReported: '自报',
+    compare: '对比',
+    compareTitle: '渠道对比',
+    compareNoData: '没有可对比的多渠道模型结果',
+    compareDimension: '维度',
+    compareL0Model: 'L0 模型字段',
+    compareL0Speed: 'L1 速度',
+    compareL0Headers: 'L0 响应头',
+    compareL2Identity: 'L2 身份',
+    compareL3Knowledge: 'L3 知识',
+    compareL4Capability: 'L4 能力',
+    compareVerdict: '综合判定',
+    fpExport: '导出指纹库',
+    fpImport: '导入指纹库',
+    fpExported: '指纹库已导出',
+    fpImported: (n) => `已导入 ${n} 条指纹配置`,
+    fpImportFailed: '导入失败：格式无效',
+    historyTitle: '历史',
+    historyDegraded: '质量下降',
+    historyNoData: '暂无历史',
   }
 };
 
@@ -1027,6 +1287,7 @@ function applyLang() {
   document.getElementById('btnVerify').textContent = t('verify');
   document.getElementById('lblConc').textContent = t('concurrency');
   document.getElementById('lblResults').textContent = t('results');
+  document.getElementById('btnCompare').textContent = t('compare');
   document.getElementById('btnExpJson').textContent = t('exportJson');
   document.getElementById('btnExpCsv').textContent = t('exportCsv');
   document.getElementById('thModel').textContent = t('model');
@@ -1034,6 +1295,9 @@ function applyLang() {
   document.getElementById('thChat').textContent = t('chat');
   document.getElementById('thTools').textContent = t('tools');
   document.getElementById('thAuth').textContent = t('authenticity');
+  document.getElementById('compareTitle').textContent = t('compareTitle');
+  document.getElementById('btnFpExport').textContent = t('fpExport');
+  document.getElementById('btnFpImport').textContent = t('fpImport');
   document.getElementById('footnoteEl').innerHTML = `<strong>${t('footCors')}</strong> — ${t('footMsg')} ${t('footStorage')}`;
   document.getElementById('langToggle').textContent = curLang === 'en' ? '中文' : 'EN';
   // Update theme button text too (it uses translated strings)
@@ -1049,6 +1313,8 @@ const D_HEX   = ['#7170ff','#38bdf8','#a78bfa','#34d399','#fb923c'];
 const D_BG    = ['#7170ff','#38bdf8','#a78bfa','#34d399','#fb923c'];
 
 let channels = [], models = [], results = {}, chCounter = 0, filterMask = [], testHistory = {};
+let historyLog = {};
+let userFingerprints = {};
 
 (function init() {
   const s = localStorage.getItem('mt_channels');
@@ -1243,12 +1509,16 @@ function renderModelList() {
           <span style="font-size:10px;color:var(--text4);font-family:var(--font);font-feature-settings:'cv01','ss03';">${hist.ts||''}</span>
         </span>`
       : '';
-    return `<label class="model-row">
+    const histId = hk.replace(/[^a-zA-Z0-9]/g, '_');
+    const hasHistLog = historyLog[hk] && historyLog[hk].length > 0;
+    const histToggle = hasHistLog ? `<span style="font-size:10px;color:var(--accent3);cursor:pointer;margin-left:4px;" onclick="event.preventDefault();event.stopPropagation();toggleHistory('${hk.replace(/'/g, "\\'")}')">&#9776;</span>` : '';
+    const histPanel = hasHistLog ? `<div class="history-panel" id="hist-${histId}">${renderHistoryTimeline(m.id, m.channelId)}</div>` : '';
+    return `<div><label class="model-row">
       <input type="checkbox" value="${esc(m.id)}" data-ch="${m.channelId}" onchange="onCheck()">
       <span>${esc(m.id)}</span>${chLabel}
-      ${histBadge}
+      ${histBadge}${histToggle}
       ${m.owned_by ? `<span class="model-owner">${esc(m.owned_by)}</span>` : ''}
-    </label>`;
+    </label>${histPanel}</div>`;
   }).join('');
   onCheck();
 }
@@ -2023,6 +2293,11 @@ async function verifySelected() {
       localStorage.setItem('mt_testHistory', JSON.stringify(testHistory));
     }
 
+    // Save to history log for timeline
+    const now2 = new Date();
+    const ts2 = `${String(now2.getMonth()+1).padStart(2,'0')}-${String(now2.getDate()).padStart(2,'0')} ${String(now2.getHours()).padStart(2,'0')}:${String(now2.getMinutes()).padStart(2,'0')}`;
+    saveHistoryEntry(rk, { ts: ts2, auth: deepResult.verdict, confidence: deepResult.confidence });
+
     renderResults();
   }
 
@@ -2236,6 +2511,9 @@ async function testSelected() {
       ts
     };
     localStorage.setItem('mt_testHistory', JSON.stringify(testHistory));
+
+    // Save to history log for timeline
+    saveHistoryEntry(rk, { ts, auth: results[rk].authVerdict || 'na' });
   }
 
   const tasks = sel.map(s => () => testOne(s));
@@ -2286,7 +2564,8 @@ function renderResults() {
             confText = `<div style="font-size:11px;color:var(--red);margin-top:2px;">${dv.confidence}% → ${esc(dv.likelyModel)}</div>`;
           }
         }
-        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${confText}${renderDeepAuthDetail(r, rk)}`;
+        const confBar = renderConfidenceBar(dv, r.id);
+        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${confText}${confBar}${renderDeepAuthDetail(r, rk)}`;
       } else {
         const authCls = r.auth === 'ok' ? 'ok' : r.auth === 'warn' ? 'warn' : 'fail';
         const authLabel = r.auth === 'ok' ? t('authOk') : r.auth === 'warn' ? t('authWarn') : t('authFail');
@@ -2311,7 +2590,9 @@ function chip(s){
 
 function clearHistory() {
   testHistory = {};
+  historyLog = {};
   localStorage.removeItem('mt_testHistory');
+  localStorage.removeItem('mt_historyLog');
   renderModelList();
   toast(t('historyCleared'));
 }
@@ -2381,6 +2662,344 @@ function exportResults(format) {
   URL.revokeObjectURL(a.href);
   toast(format === 'json' ? t('exportedJson') : t('exportedCsv'));
 }
+
+// ── Phase 3: Compare View ──
+
+let compareActiveModel = '';
+
+function openCompare() {
+  // Find models that exist in multiple channels
+  const modelChannels = {};
+  for (const [rk, r] of Object.entries(results)) {
+    if (r.chat === 'idle' && r.auth === 'idle') continue;
+    if (!modelChannels[r.id]) modelChannels[r.id] = [];
+    modelChannels[r.id].push(r);
+  }
+  const multiChannel = Object.entries(modelChannels).filter(([_, rs]) => rs.length > 1);
+  if (multiChannel.length === 0) {
+    toast(t('compareNoData'));
+    return;
+  }
+
+  // Render tabs
+  const tabsEl = document.getElementById('compareTabs');
+  compareActiveModel = multiChannel[0][0];
+  tabsEl.innerHTML = multiChannel.map(([modelId]) =>
+    `<button class="compare-model-tab${modelId === compareActiveModel ? ' active' : ''}" onclick="switchCompareTab('${modelId.replace(/'/g, "\\'")}')">${esc(modelId)}</button>`
+  ).join('');
+
+  renderCompareTable();
+  document.getElementById('compareOverlay').classList.add('open');
+}
+
+function closeCompare() {
+  document.getElementById('compareOverlay').classList.remove('open');
+}
+
+function switchCompareTab(modelId) {
+  compareActiveModel = modelId;
+  document.querySelectorAll('.compare-model-tab').forEach(el => {
+    el.classList.toggle('active', el.textContent === modelId);
+  });
+  renderCompareTable();
+}
+
+function renderCompareTable() {
+  const entries = Object.values(results).filter(r => r.id === compareActiveModel);
+  if (entries.length < 2) return;
+
+  const chHeaders = entries.map(r => {
+    const ci = r.ch % D_COLOR.length;
+    const clr = D_HEX[ci];
+    const label = channels[r.ch]?.name || `CH${r.ch + 1}`;
+    return `<th><span style="color:${clr}">${esc(label)}</span></th>`;
+  }).join('');
+
+  // Build dimension rows
+  const dimensions = [
+    { key: 'l0model', label: t('compareL0Model') },
+    { key: 'l1speed', label: t('compareL0Speed') },
+    { key: 'l0headers', label: t('compareL0Headers') },
+    { key: 'l2identity', label: t('compareL2Identity') },
+    { key: 'l3knowledge', label: t('compareL3Knowledge') },
+    { key: 'l4capability', label: t('compareL4Capability') },
+    { key: 'verdict', label: t('compareVerdict') },
+  ];
+
+  function getCellForDimension(r, dim) {
+    const signals = r.authSignals || [];
+    const dv = r.deepVerify;
+    switch (dim) {
+      case 'l0model': {
+        const s = signals.find(s => s.type === 'model_match' || s.type === 'model_mismatch');
+        if (!s) return { cls: 'cmp-na', text: '—' };
+        return s.type === 'model_match'
+          ? { cls: 'cmp-ok', text: '&#10003;' }
+          : { cls: 'cmp-warn', text: s.returned || '&#9888;' };
+      }
+      case 'l1speed': {
+        const s = signals.find(s => s.type === 'speed_ok' || s.type === 'speed_fast' || s.type === 'speed');
+        if (!s) return { cls: 'cmp-na', text: '—' };
+        if (s.type === 'speed_ok') return { cls: 'cmp-ok', text: `${s.tps} tps` };
+        if (s.type === 'speed_fast') return { cls: 'cmp-fail', text: `${s.tps} tps (${s.ratio}x)` };
+        return { cls: 'cmp-na', text: `${s.tps} tps` };
+      }
+      case 'l0headers': {
+        const s = signals.find(s => s.type === 'headers');
+        if (!s) return { cls: 'cmp-na', text: '—' };
+        return s.detected.length > 0
+          ? { cls: 'cmp-ok', text: `${s.detected.length}` }
+          : { cls: 'cmp-na', text: '—' };
+      }
+      case 'l2identity': {
+        if (!dv || !dv.l2Result || dv.l2Result.skip) return { cls: 'cmp-na', text: '—' };
+        return dv.l2Result.match
+          ? { cls: 'cmp-ok', text: '&#10003;' }
+          : { cls: 'cmp-warn', text: esc((dv.l2Result.reported || '').slice(0, 20)) };
+      }
+      case 'l3knowledge': {
+        if (!dv || !dv.l3Results || dv.l3Results.length === 0 || dv.l3Results[0].skip) return { cls: 'cmp-na', text: '—' };
+        const valid = dv.l3Results.filter(r => !r.skip);
+        const fails = valid.filter(r => r.level === 'warn').length;
+        if (fails === 0) return { cls: 'cmp-ok', text: `${valid.length}/${valid.length}` };
+        return { cls: 'cmp-fail', text: `${valid.length - fails}/${valid.length}` };
+      }
+      case 'l4capability': {
+        if (!dv || !dv.l4Result || !dv.l4Result.testResults) return { cls: 'cmp-na', text: '—' };
+        const valid = dv.l4Result.testResults.filter(r => r.passed !== null);
+        const passed = valid.filter(r => r.passed).length;
+        const cls = passed >= valid.length * 0.7 ? 'cmp-ok' : passed >= valid.length * 0.4 ? 'cmp-warn' : 'cmp-fail';
+        return { cls, text: `${passed}/${valid.length}` };
+      }
+      case 'verdict': {
+        const v = r.authVerdict || r.auth;
+        if (!v || v === 'idle' || v === 'na') return { cls: 'cmp-na', text: '—' };
+        const cls = v === 'ok' ? 'cmp-ok' : v === 'warn' ? 'cmp-warn' : 'cmp-fail';
+        let text = v === 'ok' ? t('authOk') : v === 'warn' ? t('authWarn') : t('authFail');
+        if (dv && dv.confidence !== null) text += ` ${dv.confidence}%`;
+        return { cls: `${cls} compare-verdict`, text };
+      }
+      default: return { cls: 'cmp-na', text: '—' };
+    }
+  }
+
+  const rows = dimensions.map(dim => {
+    const cells = entries.map(r => {
+      const cell = getCellForDimension(r, dim.key);
+      return `<td class="${cell.cls}">${cell.text}</td>`;
+    }).join('');
+    return `<tr><td>${dim.label}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('compareContent').innerHTML = `
+    <table class="compare-table">
+      <thead><tr><th>${t('compareDimension')}</th>${chHeaders}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Phase 3: Confidence Bar Visualization ──
+
+function renderConfidenceBar(dv, claimedModel) {
+  if (!dv || !dv.l4Result || !dv.l4Result.inference) return '';
+  const inf = dv.l4Result.inference;
+  const top3 = inf.sorted.slice(0, 3);
+  const claimedNorm = normalizeModelId(claimedModel);
+
+  const bars = top3.map(([model, prob]) => {
+    const pct = Math.round(prob * 100);
+    const isClaimed = (model === claimedNorm || claimedNorm.startsWith(model) || claimedNorm.includes(model) || model.includes(claimedNorm));
+    const color = isClaimed ? 'var(--green)' : (pct > 30 ? 'var(--red)' : 'var(--amber)');
+    return `<div class="conf-bar-row">
+      <span class="conf-bar-label" title="${esc(model)}">${esc(model)}</span>
+      <span class="conf-bar" style="width:${Math.max(pct, 3)}px;max-width:80px;background:${color};"></span>
+      <span class="conf-bar-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="conf-bar-wrap">${bars}</div>`;
+}
+
+// ── Phase 3: History Timeline ──
+
+// Store full history (array per model key)
+(function loadHistoryLog() {
+  const s = localStorage.getItem('mt_historyLog');
+  if (s) { try { historyLog = JSON.parse(s); } catch(e) {} }
+})();
+
+function saveHistoryEntry(rk, entry) {
+  if (!historyLog[rk]) historyLog[rk] = [];
+  historyLog[rk].push(entry);
+  // Keep only last 20
+  if (historyLog[rk].length > 20) historyLog[rk] = historyLog[rk].slice(-20);
+  localStorage.setItem('mt_historyLog', JSON.stringify(historyLog));
+}
+
+function renderHistoryTimeline(modelId, channelId) {
+  const rk = `${modelId}::${channelId}`;
+  const entries = historyLog[rk];
+  if (!entries || entries.length === 0) return `<div class="history-meta">${t('historyNoData')}</div>`;
+
+  const dots = entries.map((e, i) => {
+    const color = e.auth === 'ok' ? 'var(--green)' : e.auth === 'warn' ? 'var(--amber)' : e.auth === 'fail' ? 'var(--red)' : 'var(--text4)';
+    const tip = `${e.ts} · ${e.auth || 'n/a'}${e.confidence ? ` ${e.confidence}%` : ''}`;
+    const dot = `<span class="history-dot" style="background:${color}" title="${esc(tip)}"></span>`;
+    return i < entries.length - 1 ? dot + '<span class="history-line"></span>' : dot;
+  }).join('');
+
+  // Check for degradation
+  let alert = '';
+  if (entries.length >= 2) {
+    const prev = entries[entries.length - 2];
+    const curr = entries[entries.length - 1];
+    if ((prev.auth === 'ok' && (curr.auth === 'warn' || curr.auth === 'fail')) ||
+        (prev.auth === 'warn' && curr.auth === 'fail')) {
+      alert = `<div class="history-alert">${t('historyDegraded')}</div>`;
+    }
+  }
+
+  return `<div class="history-timeline">${dots}</div>${alert}`;
+}
+
+function toggleHistory(rk) {
+  const el = document.getElementById('hist-' + rk.replace(/[^a-zA-Z0-9]/g, '_'));
+  if (el) el.classList.toggle('open');
+}
+
+// ── Phase 3: Fingerprint Import/Export ──
+
+// Custom user fingerprints stored in localStorage
+(function loadUserFingerprints() {
+  const s = localStorage.getItem('mt_userFingerprints');
+  if (s) { try { userFingerprints = JSON.parse(s); } catch(e) {} }
+  // Merge into active config
+  applyUserFingerprints();
+})();
+
+function applyUserFingerprints() {
+  if (userFingerprints.speedProfiles) {
+    for (const [k, v] of Object.entries(userFingerprints.speedProfiles)) {
+      SPEED_PROFILES[k] = v;
+    }
+  }
+  if (userFingerprints.knowledgeProbes) {
+    for (const [k, v] of Object.entries(userFingerprints.knowledgeProbes)) {
+      if (!KNOWLEDGE_PROBES[k]) KNOWLEDGE_PROBES[k] = [];
+      // Merge without duplicating (check by question text)
+      const existing = new Set(KNOWLEDGE_PROBES[k].map(p => p.q));
+      for (const probe of v) {
+        if (!existing.has(probe.q)) {
+          // Reconstruct regex from string
+          if (typeof probe.expect === 'string') probe.expect = new RegExp(probe.expect, 'i');
+          KNOWLEDGE_PROBES[k].push(probe);
+        }
+      }
+    }
+  }
+  if (userFingerprints.capabilityTests) {
+    const existingNames = new Set(CAPABILITY_TESTS.map(t => t.name));
+    for (const test of userFingerprints.capabilityTests) {
+      if (!existingNames.has(test.name)) {
+        // Reconstruct check function from string
+        if (typeof test.check === 'string') {
+          try { test.check = new Function('r', test.check); } catch(e) { continue; }
+        }
+        CAPABILITY_TESTS.push(test);
+      }
+    }
+  }
+}
+
+function exportFingerprints() {
+  const data = {
+    version: 1,
+    speedProfiles: SPEED_PROFILES,
+    knowledgeProbes: {},
+    capabilityTests: CAPABILITY_TESTS.map(t => ({
+      name: t.name,
+      prompt: t.prompt,
+      check: t.check.toString(),
+      weights: t.weights
+    }))
+  };
+  // Serialize knowledge probes with regex as string
+  for (const [k, probes] of Object.entries(KNOWLEDGE_PROBES)) {
+    data.knowledgeProbes[k] = probes.map(p => ({
+      q: p.q,
+      expect: p.expect.source,
+      date: p.date,
+      shouldKnow: p.shouldKnow
+    }));
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'model-tester-fingerprints.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(t('fpExported'));
+}
+
+function importFingerprints(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function() {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data.version) throw new Error('no version');
+      let count = 0;
+
+      if (data.speedProfiles) {
+        if (!userFingerprints.speedProfiles) userFingerprints.speedProfiles = {};
+        for (const [k, v] of Object.entries(data.speedProfiles)) {
+          userFingerprints.speedProfiles[k] = v;
+          SPEED_PROFILES[k] = v;
+          count++;
+        }
+      }
+      if (data.knowledgeProbes) {
+        if (!userFingerprints.knowledgeProbes) userFingerprints.knowledgeProbes = {};
+        for (const [k, probes] of Object.entries(data.knowledgeProbes)) {
+          if (!userFingerprints.knowledgeProbes[k]) userFingerprints.knowledgeProbes[k] = [];
+          if (!KNOWLEDGE_PROBES[k]) KNOWLEDGE_PROBES[k] = [];
+          const existing = new Set(KNOWLEDGE_PROBES[k].map(p => p.q));
+          for (const p of probes) {
+            if (!existing.has(p.q)) {
+              const probe = { q: p.q, expect: new RegExp(p.expect, 'i'), date: p.date, shouldKnow: p.shouldKnow };
+              KNOWLEDGE_PROBES[k].push(probe);
+              userFingerprints.knowledgeProbes[k].push(p);
+              count++;
+            }
+          }
+        }
+      }
+      if (data.capabilityTests) {
+        if (!userFingerprints.capabilityTests) userFingerprints.capabilityTests = [];
+        const existingNames = new Set(CAPABILITY_TESTS.map(t => t.name));
+        for (const test of data.capabilityTests) {
+          if (!existingNames.has(test.name)) {
+            let checkFn;
+            try { checkFn = new Function('r', test.check); } catch(e) { continue; }
+            CAPABILITY_TESTS.push({ name: test.name, prompt: test.prompt, check: checkFn, weights: test.weights });
+            userFingerprints.capabilityTests.push(test);
+            count++;
+          }
+        }
+      }
+
+      localStorage.setItem('mt_userFingerprints', JSON.stringify(userFingerprints));
+      toast(LANG[curLang].fpImported(count));
+    } catch(e) {
+      toast(t('fpImportFailed'));
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ── End Phase 3 ──
 
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2000);}
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
