@@ -534,6 +534,89 @@
   }
   .toast.on { opacity: 1; transform: translateY(0); }
 
+  /* Authenticity column */
+  .auth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 10px 2px 6px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 510;
+    line-height: 1.5;
+    border: 1px solid;
+    cursor: pointer;
+    transition: opacity 0.12s ease;
+    user-select: none;
+  }
+  .auth-badge:hover { opacity: 0.8; }
+  .auth-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .auth-badge--ok {
+    color: var(--green);
+    border-color: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.04);
+  }
+  .auth-badge--ok::before { background: var(--green); }
+  .auth-badge--warn {
+    color: var(--amber);
+    border-color: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.04);
+  }
+  .auth-badge--warn::before { background: var(--amber); }
+  .auth-badge--fail {
+    color: var(--red);
+    border-color: rgba(239, 68, 68, 0.15);
+    background: rgba(239, 68, 68, 0.04);
+  }
+  .auth-badge--fail::before { background: var(--red); }
+  .auth-badge--na {
+    color: var(--text4);
+    border-color: var(--border);
+    background: transparent;
+  }
+  .auth-badge--na::before { background: var(--text4); }
+
+  .auth-detail {
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text3);
+    display: none;
+  }
+  .auth-detail.open { display: block; }
+  .auth-detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 2px 0;
+  }
+  .auth-detail-row .signal-icon {
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+  }
+  .auth-detail-row .signal-label {
+    color: var(--text4);
+    min-width: 60px;
+    flex-shrink: 0;
+  }
+  .auth-detail-row .signal-value {
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    word-break: break-all;
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -698,7 +781,7 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th id="thModel">Model</th><th id="thChannel">Channel</th><th id="thChat">Chat</th><th id="thTools">Tools</th><th></th></tr></thead>
+        <thead><tr><th id="thModel">Model</th><th id="thChannel">Channel</th><th id="thChat">Chat</th><th id="thTools">Tools</th><th id="thAuth">Authenticity</th></tr></thead>
         <tbody id="resultsBody"></tbody>
       </table>
     </div>
@@ -769,6 +852,25 @@ const LANG = {
     footStorage: 'Channels persist in <code>localStorage</code>. Export saves API keys in plain text.',
     themeLight: 'Light',
     themeDark: 'Dark',
+    authenticity: 'Authenticity',
+    authOk: 'Normal',
+    authWarn: 'Suspicious',
+    authFail: 'Abnormal',
+    authNa: 'N/A',
+    authModelMatch: 'Model field matches',
+    authModelMismatch: 'Model field mismatch',
+    authModelReturned: 'Returned',
+    authSpeedOk: 'Speed within normal range',
+    authSpeedFast: 'Speed too fast for claimed model',
+    authSysFingerprint: 'system_fingerprint',
+    authSysFpValid: 'Valid OpenAI fingerprint',
+    authSysFpInvalid: 'Invalid fingerprint format',
+    authSysFpNone: 'Not present',
+    authHeaders: 'API headers',
+    authHeadersOpenAI: 'OpenAI headers detected',
+    authHeadersNone: 'No vendor headers detected',
+    authTps: 'tps',
+    authExpected: 'expected',
   },
   zh: {
     title: '模型测试器',
@@ -824,6 +926,25 @@ const LANG = {
     footStorage: '渠道信息保存在 <code>localStorage</code> 中。导出会包含明文 API 密钥。',
     themeLight: '浅色',
     themeDark: '深色',
+    authenticity: '真实性',
+    authOk: '正常',
+    authWarn: '可疑',
+    authFail: '异常',
+    authNa: '—',
+    authModelMatch: '模型字段匹配',
+    authModelMismatch: '模型字段不匹配',
+    authModelReturned: '返回值',
+    authSpeedOk: '速度在正常范围内',
+    authSpeedFast: '速度过快，与声称模型不符',
+    authSysFingerprint: 'system_fingerprint',
+    authSysFpValid: '有效的 OpenAI 指纹',
+    authSysFpInvalid: '指纹格式无效',
+    authSysFpNone: '未返回',
+    authHeaders: 'API 响应头',
+    authHeadersOpenAI: '检测到 OpenAI 响应头',
+    authHeadersNone: '未检测到厂商响应头',
+    authTps: 'tps',
+    authExpected: '预期范围',
   }
 };
 
@@ -872,6 +993,7 @@ function applyLang() {
   document.getElementById('thChannel').textContent = t('channel');
   document.getElementById('thChat').textContent = t('chat');
   document.getElementById('thTools').textContent = t('tools');
+  document.getElementById('thAuth').textContent = t('authenticity');
   document.getElementById('footnoteEl').innerHTML = `<strong>${t('footCors')}</strong> — ${t('footMsg')} ${t('footStorage')}`;
   document.getElementById('langToggle').textContent = curLang === 'en' ? '中文' : 'EN';
   // Update theme button text too (it uses translated strings)
@@ -1077,6 +1199,7 @@ function renderModelList() {
       ? `<span style="display:inline-flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;">
           <span title="Chat: ${hist.chat==='pass'?'Pass':'Fail'} · TTFT ${hist.ttft||'—'} · ${hist.total||'—'} · ${hist.resp||''}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${hist.chat==='pass'?'var(--green)':'var(--red)'};flex-shrink:0;"></span>
           <span title="Tools: ${hist.tool==='pass'?'Pass':hist.tool==='warn'?'Partial':'Fail'}${hist.toolName?` · ${hist.toolName}(${hist.toolArgs||''})`:''} · ${hist.toolTotal||''}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${hist.tool==='pass'?'var(--green)':hist.tool==='warn'?'var(--amber)':'var(--red)'};flex-shrink:0;"></span>
+          ${hist.auth ? `<span title="Auth: ${hist.auth}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${hist.auth==='ok'?'var(--green)':hist.auth==='warn'?'var(--amber)':'var(--red)'};flex-shrink:0;border:1px solid rgba(255,255,255,0.1);"></span>` : ''}
           <span style="font-size:10px;color:var(--text4);font-family:var(--font);font-feature-settings:'cv01','ss03';">${hist.ts||''}</span>
         </span>`
       : '';
@@ -1123,6 +1246,219 @@ async function runPool(tasks, concurrency) {
   return results;
 }
 
+// ── Authenticity Detection (L0 + L1) ──
+
+// Speed profiles: [maxTPS] — only flag "too fast" (upper bound)
+// Values are generous upper bounds; exceeding these strongly suggests a smaller/faster model
+const SPEED_PROFILES = {
+  // GPT-4 original (slow)
+  'gpt-4': { maxTps: 45 },
+  'gpt-4-0613': { maxTps: 45 },
+  'gpt-4-0314': { maxTps: 45 },
+  // GPT-4 Turbo
+  'gpt-4-turbo': { maxTps: 85 },
+  'gpt-4-turbo-preview': { maxTps: 85 },
+  'gpt-4-turbo-2024-04-09': { maxTps: 85 },
+  'gpt-4-1106-preview': { maxTps: 85 },
+  'gpt-4-0125-preview': { maxTps: 85 },
+  // GPT-4o (fast, but not as fast as mini)
+  'gpt-4o': { maxTps: 160 },
+  'gpt-4o-2024-05-13': { maxTps: 160 },
+  'gpt-4o-2024-08-06': { maxTps: 160 },
+  'gpt-4o-2024-11-20': { maxTps: 160 },
+  // GPT-4o mini (very fast)
+  'gpt-4o-mini': { maxTps: 220 },
+  'gpt-4o-mini-2024-07-18': { maxTps: 220 },
+  // GPT-3.5
+  'gpt-3.5-turbo': { maxTps: 180 },
+  'gpt-3.5-turbo-0125': { maxTps: 180 },
+  'gpt-3.5-turbo-1106': { maxTps: 180 },
+  // Claude models
+  'claude-3-opus': { maxTps: 40 },
+  'claude-3-opus-20240229': { maxTps: 40 },
+  'claude-3-sonnet': { maxTps: 80 },
+  'claude-3-sonnet-20240229': { maxTps: 80 },
+  'claude-3.5-sonnet': { maxTps: 120 },
+  'claude-3-5-sonnet-20240620': { maxTps: 120 },
+  'claude-3-5-sonnet-20241022': { maxTps: 120 },
+  'claude-3-haiku': { maxTps: 200 },
+  'claude-3-haiku-20240307': { maxTps: 200 },
+  'claude-3.5-haiku': { maxTps: 220 },
+  // DeepSeek
+  'deepseek-chat': { maxTps: 120 },
+  'deepseek-reasoner': { maxTps: 60 },
+};
+
+// Normalize model ID for profile lookup
+function normalizeModelId(id) {
+  if (!id) return '';
+  let n = id.toLowerCase().trim();
+  // Remove common prefixes added by resellers
+  n = n.replace(/^(openai\/|anthropic\/|google\/|meta\/)/, '');
+  return n;
+}
+
+// Find best matching speed profile
+function findSpeedProfile(modelId) {
+  const n = normalizeModelId(modelId);
+  // Exact match first
+  if (SPEED_PROFILES[n]) return { profile: SPEED_PROFILES[n], matched: n };
+  // Prefix match (e.g., "gpt-4o-2024-11-20" matches "gpt-4o")
+  const keys = Object.keys(SPEED_PROFILES).sort((a, b) => b.length - a.length);
+  for (const k of keys) {
+    if (n.startsWith(k) || n.includes(k)) return { profile: SPEED_PROFILES[k], matched: k };
+  }
+  return null;
+}
+
+// L0: Check response metadata
+function checkL0(requestedModel, responseModel, systemFingerprint, headers) {
+  const signals = [];
+
+  // 1. Model field comparison
+  if (responseModel) {
+    const reqNorm = normalizeModelId(requestedModel);
+    const respNorm = normalizeModelId(responseModel);
+    if (respNorm === reqNorm || respNorm.startsWith(reqNorm) || reqNorm.startsWith(respNorm)) {
+      signals.push({ type: 'model_match', level: 'ok', detail: responseModel });
+    } else {
+      // Model mismatch — info level (honest resellers may return real model name)
+      signals.push({ type: 'model_mismatch', level: 'info', requested: requestedModel, returned: responseModel });
+    }
+  }
+
+  // 2. system_fingerprint check
+  if (systemFingerprint) {
+    // OpenAI format: fp_XXXX (alphanumeric, 8-12 chars after fp_)
+    const validFp = /^fp_[a-zA-Z0-9]{8,16}$/.test(systemFingerprint);
+    signals.push({ type: 'sys_fingerprint', level: validFp ? 'ok' : 'info', value: systemFingerprint, valid: validFp });
+  } else {
+    // No fingerprint — not necessarily bad, many providers don't return it
+    signals.push({ type: 'sys_fingerprint', level: 'neutral', value: null });
+  }
+
+  // 3. Response headers check
+  const headerSignals = [];
+  const openaiHeaders = ['x-ratelimit-limit-requests', 'x-ratelimit-limit-tokens', 'openai-organization', 'openai-processing-ms', 'x-request-id'];
+  const azureHeaders = ['x-ms-region', 'ms-azureopenai-model'];
+  const anthropicHeaders = ['x-anthropic-model-id', 'anthropic-ratelimit-tokens-limit'];
+
+  for (const h of openaiHeaders) { if (headers[h]) headerSignals.push(`openai:${h}`); }
+  for (const h of azureHeaders) { if (headers[h]) headerSignals.push(`azure:${h}`); }
+  for (const h of anthropicHeaders) { if (headers[h]) headerSignals.push(`anthropic:${h}`); }
+
+  if (headerSignals.length > 0) {
+    signals.push({ type: 'headers', level: 'ok', detected: headerSignals });
+  } else {
+    signals.push({ type: 'headers', level: 'neutral', detected: [] });
+  }
+
+  return signals;
+}
+
+// L1: Speed-based detection
+function checkL1(modelId, ttftMs, totalMs, completionTokens) {
+  const signals = [];
+  if (!completionTokens || completionTokens <= 0 || !totalMs) return signals;
+
+  // Calculate TPS (tokens per second) from total time minus TTFT
+  const generationMs = ttftMs > 0 ? (totalMs - ttftMs) : totalMs;
+  if (generationMs <= 0) return signals;
+  const tps = Math.round((completionTokens / generationMs) * 1000);
+
+  const match = findSpeedProfile(modelId);
+  if (!match) {
+    signals.push({ type: 'speed', level: 'neutral', tps, note: 'no_profile' });
+    return signals;
+  }
+
+  const { profile, matched } = match;
+  if (tps > profile.maxTps) {
+    // Speed exceeds upper bound — suspicious
+    const ratio = (tps / profile.maxTps).toFixed(1);
+    signals.push({ type: 'speed_fast', level: 'warn', tps, maxTps: profile.maxTps, ratio, matched });
+  } else {
+    signals.push({ type: 'speed_ok', level: 'ok', tps, maxTps: profile.maxTps, matched });
+  }
+
+  return signals;
+}
+
+// Compute overall authenticity verdict from signals
+function computeAuthVerdict(signals) {
+  let hasWarn = false;
+  let hasFail = false;
+
+  for (const s of signals) {
+    if (s.level === 'warn') hasWarn = true;
+    if (s.level === 'fail') hasFail = true;
+  }
+
+  // Speed too fast is a strong signal — mark as fail (abnormal)
+  if (signals.some(s => s.type === 'speed_fast' && parseFloat(s.ratio) >= 2.0)) return 'fail';
+  if (signals.some(s => s.type === 'speed_fast')) return 'warn';
+  if (hasFail) return 'fail';
+  if (hasWarn) return 'warn';
+  return 'ok';
+}
+
+// Render authenticity detail HTML
+function renderAuthDetail(signals, rk) {
+  if (!signals || signals.length === 0) return '';
+  const rows = signals.map(s => {
+    let icon = '', label = '', value = '';
+    switch (s.type) {
+      case 'model_match':
+        icon = '<span style="color:var(--green)">&#10003;</span>';
+        label = t('authModelMatch');
+        value = s.detail;
+        break;
+      case 'model_mismatch':
+        icon = '<span style="color:var(--amber)">&#9888;</span>';
+        label = t('authModelMismatch');
+        value = `${t('authModelReturned')}: ${s.returned}`;
+        break;
+      case 'sys_fingerprint':
+        icon = s.level === 'ok' ? '<span style="color:var(--green)">&#10003;</span>'
+             : s.value ? '<span style="color:var(--amber)">&#9888;</span>'
+             : '<span style="color:var(--text4)">&#8212;</span>';
+        label = t('authSysFingerprint');
+        value = s.value ? (s.valid ? `${s.value} (${t('authSysFpValid')})` : `${s.value} (${t('authSysFpInvalid')})`) : t('authSysFpNone');
+        break;
+      case 'headers':
+        icon = s.detected.length > 0 ? '<span style="color:var(--green)">&#10003;</span>' : '<span style="color:var(--text4)">&#8212;</span>';
+        label = t('authHeaders');
+        value = s.detected.length > 0 ? `${t('authHeadersOpenAI')} (${s.detected.length})` : t('authHeadersNone');
+        break;
+      case 'speed_ok':
+        icon = '<span style="color:var(--green)">&#10003;</span>';
+        label = t('authSpeedOk');
+        value = `${s.tps} ${t('authTps')} (${t('authExpected')} ≤${s.maxTps})`;
+        break;
+      case 'speed_fast':
+        icon = '<span style="color:var(--red)">&#10005;</span>';
+        label = t('authSpeedFast');
+        value = `${s.tps} ${t('authTps')} (${t('authExpected')} ≤${s.maxTps}, ${s.ratio}x)`;
+        break;
+      case 'speed':
+        icon = '<span style="color:var(--text4)">&#8212;</span>';
+        label = `Speed`;
+        value = `${s.tps} ${t('authTps')} (no profile)`;
+        break;
+      default: return '';
+    }
+    return `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${label}</span><span class="signal-value">${esc(value)}</span></div>`;
+  }).join('');
+  return `<div class="auth-detail" id="auth-detail-${rk.replace(/[^a-zA-Z0-9]/g,'_')}">${rows}</div>`;
+}
+
+function toggleAuthDetail(rk) {
+  const el = document.getElementById('auth-detail-' + rk.replace(/[^a-zA-Z0-9]/g,'_'));
+  if (el) el.classList.toggle('open');
+}
+
+// ── End Authenticity Detection ──
+
 // Test selected models
 async function testSelected() {
   const sel=getChecked(); if(!sel.length) return;
@@ -1132,7 +1468,7 @@ async function testSelected() {
   const concurrency = parseInt(document.getElementById('concSelect').value) || 3;
 
   results={};
-  sel.forEach(s=>{ const k=`${s.id}::${s.channelId}`; results[k]={id:s.id,ch:s.channelId,chat:'idle',tool:'idle',ttft:'',total:'',resp:'',ce:'',toolName:'',toolArgs:'',te:'',tokens:''}; });
+  sel.forEach(s=>{ const k=`${s.id}::${s.channelId}`; results[k]={id:s.id,ch:s.channelId,chat:'idle',tool:'idle',ttft:'',total:'',resp:'',ce:'',toolName:'',toolArgs:'',te:'',tokens:'',auth:'idle',authSignals:[],authVerdict:''}; });
   renderResults();
 
   const pw=document.getElementById('progressWrap'), pb=document.getElementById('progressBar');
@@ -1185,8 +1521,12 @@ async function testSelected() {
         else { throw new Error(`HTTP ${r.status}: ${errText.slice(0,150)}`); }
       }
       if(!r.ok){const e=await r.text().catch(()=>'');throw new Error(`HTTP ${r.status}: ${e.slice(0,150)}`)}
+      // Capture response headers for L0 check
+      const respHeaders = {};
+      for (const [hk, hv] of r.headers.entries()) { respHeaders[hk.toLowerCase()] = hv; }
       const reader=r.body.getReader(),decoder=new TextDecoder();
       let ttft=0, content='', usage=null, buf='', streamDone=false;
+      let responseModel='', systemFingerprint='';
       const streamDeadline = performance.now() + TEST_TIMEOUT_MS;
       while(!streamDone){
         if(performance.now() > streamDeadline){ reader.cancel(); throw new Error('Timeout: 流式响应超过100秒未完成'); }
@@ -1200,6 +1540,9 @@ async function testSelected() {
               if(!ttft&&j.choices?.[0]?.delta?.content) ttft=Math.round(performance.now()-tStart);
               if(j.choices?.[0]?.delta?.content) content+=j.choices[0].delta.content;
               if(j.usage) usage=j.usage;
+              // Capture model and system_fingerprint from first chunk
+              if(j.model && !responseModel) responseModel=j.model;
+              if(j.system_fingerprint && !systemFingerprint) systemFingerprint=j.system_fingerprint;
             }catch(_){}
           }
         }
@@ -1213,10 +1556,20 @@ async function testSelected() {
       results[rk].resp=content.trim().slice(0,80)||'(empty)';
       results[rk].tokens=usage?`${usage.prompt_tokens||0}+${usage.completion_tokens||0}=${usage.total_tokens||0}tk`:'';
       if (!hasHello) results[rk].ce = 'Did not contain expected response';
+
+      // ── Authenticity L0 + L1 ──
+      const l0Signals = checkL0(s.id, responseModel, systemFingerprint, respHeaders);
+      const completionTokens = usage ? (usage.completion_tokens || 0) : 0;
+      const l1Signals = checkL1(s.id, ttft, elapsed, completionTokens);
+      const allSignals = [...l0Signals, ...l1Signals];
+      results[rk].authSignals = allSignals;
+      results[rk].authVerdict = computeAuthVerdict(allSignals);
+      results[rk].auth = results[rk].authVerdict;
     }catch(e){
       const elapsed=Math.round(performance.now()-tStart);
       results[rk].chat='fail';results[rk].ce=e.message;
       results[rk].ttft='—';results[rk].total=`${elapsed}ms`;
+      results[rk].auth='na';results[rk].authSignals=[];results[rk].authVerdict='na';
     }
     tick();renderResults();
 
@@ -1301,6 +1654,7 @@ async function testSelected() {
       toolName: results[rk].toolName,
       toolArgs: results[rk].toolArgs,
       toolTotal: results[rk].toolTotal,
+      auth: results[rk].authVerdict || '',
       ts
     };
     localStorage.setItem('mt_testHistory', JSON.stringify(testHistory));
@@ -1322,6 +1676,7 @@ function renderResults() {
     :entries.map(r=>{
       const ci=r.ch%D_COLOR.length,clr=D_HEX[ci];
       const chLabel = channels[r.ch]?.name || `CH${r.ch+1}`;
+      const rk = `${r.id}::${r.ch}`;
       const chatDetail=r.chat==='pass'
         ?`<div style="font-size:11px;color:var(--text4);margin-top:2px;">TTFT ${r.ttft} · total ${r.total}${r.tokens?` · ${r.tokens}`:''}</div><div style="font-size:11px;color:var(--text3);margin-top:1px;font-family:var(--mono);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.resp||'')}">${esc((r.resp||'').slice(0,60))}</div>`
         :r.chat==='fail'?`<div style="font-size:11px;color:var(--red);margin-top:2px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.ce||'')}">${esc((r.ce||'').slice(0,60))}</div>`
@@ -1331,12 +1686,23 @@ function renderResults() {
         :r.tool==='warn'?`<div style="font-size:11px;color:var(--amber);margin-top:2px;">${esc(r.te||'')}</div>`
         :r.tool==='fail'?`<div style="font-size:11px;color:var(--red);margin-top:2px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.te||'')}">${esc((r.te||'').slice(0,60))}</div>`
         :r.tool==='running'?'<div style="font-size:11px;color:var(--text4);margin-top:2px;"><span class="spin"></span></div>':'';
+      // Authenticity column
+      let authCell = '';
+      if (r.auth === 'idle') {
+        authCell = `<span class="auth-badge auth-badge--na">${t('authNa')}</span>`;
+      } else if (r.auth === 'na') {
+        authCell = `<span class="auth-badge auth-badge--na">${t('authNa')}</span>`;
+      } else {
+        const authCls = r.auth === 'ok' ? 'ok' : r.auth === 'warn' ? 'warn' : 'fail';
+        const authLabel = r.auth === 'ok' ? t('authOk') : r.auth === 'warn' ? t('authWarn') : t('authFail');
+        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${renderAuthDetail(r.authSignals, rk)}`;
+      }
       return `<tr>
         <td class="cell-model">${esc(r.id)}</td>
         <td><span class="cell-source"><span class="sdot" style="background:${clr}"></span>${esc(chLabel)}</span></td>
         <td>${chip(r.chat)}${chatDetail}</td>
         <td>${chip(r.tool)}${toolDetail}</td>
-        <td></td>
+        <td>${authCell}</td>
       </tr>`;
     }).join('');
 }
@@ -1392,17 +1758,19 @@ function exportResults(format) {
         toolName: r.toolName,
         toolArgs: r.toolArgs,
         toolTotal: r.toolTotal,
-        toolError: r.te
+        toolError: r.te,
+        authenticity: r.authVerdict || '',
+        authSignals: r.authSignals || []
       };
     });
     blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     filename = 'model-test-results.json';
   } else {
-    const headers = ['model','channel','chat','ttft','total','tokens','response','chatError','tool','toolName','toolArgs','toolTotal','toolError'];
+    const headers = ['model','channel','chat','ttft','total','tokens','response','chatError','tool','toolName','toolArgs','toolTotal','toolError','authenticity'];
     const csvEscape = s => `"${(s||'').replace(/"/g,'""')}"`;
     const rows = entries.map(r => {
       const chLabel = channels[r.ch]?.name || `CH${r.ch+1}`;
-      return [r.id,chLabel,r.chat,r.ttft,r.total,r.tokens,r.resp,r.ce,r.tool,r.toolName,r.toolArgs,r.toolTotal,r.te].map(csvEscape).join(',');
+      return [r.id,chLabel,r.chat,r.ttft,r.total,r.tokens,r.resp,r.ce,r.tool,r.toolName,r.toolArgs,r.toolTotal,r.te,r.authVerdict||''].map(csvEscape).join(',');
     });
     blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
     filename = 'model-test-results.csv';
