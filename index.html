@@ -722,39 +722,6 @@
     color: #fff;
   }
 
-  /* Confidence bar */
-  .conf-bar-wrap {
-    margin-top: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .conf-bar-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    color: var(--text4);
-  }
-  .conf-bar-label {
-    min-width: 70px;
-    font-family: var(--mono);
-    text-align: right;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .conf-bar {
-    height: 6px;
-    border-radius: 3px;
-    transition: width 0.3s ease;
-    position: relative;
-  }
-  .conf-bar-pct {
-    min-width: 28px;
-    text-align: left;
-  }
-
   /* History timeline */
   .history-panel {
     display: none;
@@ -958,8 +925,8 @@
     <div class="model-scroll" id="modelList"></div>
     <div class="action-row action-row--between">
       <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn btn--primary" id="btnTest" onclick="testSelected()" disabled>Test selected</button>
-        <button class="btn btn--ghost" id="btnVerify" onclick="verifySelected()" disabled>Verify</button>
+        <button class="btn btn--primary" id="btnTest" onclick="testSelected()" disabled>Performance Test</button>
+        <button class="btn btn--ghost" id="btnVerify" onclick="verifySelected()" disabled>Authenticity Check</button>
         <span class="select-hint" id="selectedCount"></span>
       </div>
       <div class="conc-control">
@@ -1040,7 +1007,7 @@ const LANG = {
     deselectAll: 'Deselect all',
     textOnly: 'Text only',
     clearHistory: 'Clear history',
-    testSelected: 'Test selected',
+    testSelected: 'Performance Test',
     testing: 'Testing…',
     concurrency: 'Concurrency',
     selected: 'selected',
@@ -1094,8 +1061,8 @@ const LANG = {
     authHeadersNone: 'No vendor headers detected',
     authTps: 'tps',
     authExpected: 'expected',
-    verify: 'Verify',
-    verifying: 'Verifying…',
+    verify: 'Authenticity Check',
+    verifying: 'Checking…',
     verifyDone: (n) => `${n} model${n>1?'s':''} verified`,
     authIdentity: 'Self-report',
     authIdentityMatch: 'Self-reported model matches',
@@ -1107,10 +1074,10 @@ const LANG = {
     authKnowledgeSkip: 'No probes for this model',
     authCapability: 'Capability test',
     authCapabilityDetail: 'passed',
-    authInference: 'Bayesian inference',
-    authConfidence: 'confidence',
+    authInference: 'Score',
+    authConfidence: 'score',
     authLikelyModel: 'Most likely',
-    authVerifyProgress: (step, total) => `L${step}/${total} detecting...`,
+    authVerifyProgress: (step, total) => `L${step}/${total} checking...`,
     authCutoff: 'Cutoff',
     authReported: 'Reported',
     compare: 'Compare',
@@ -1152,7 +1119,7 @@ const LANG = {
     deselectAll: '全不选',
     textOnly: '仅文本',
     clearHistory: '清除历史',
-    testSelected: '测试选中',
+    testSelected: '性能测试',
     testing: '测试中…',
     concurrency: '并发数',
     selected: '已选',
@@ -1206,8 +1173,8 @@ const LANG = {
     authHeadersNone: '未检测到厂商响应头',
     authTps: 'tps',
     authExpected: '预期范围',
-    verify: '验证',
-    verifying: '验证中…',
+    verify: '真伪鉴定',
+    verifying: '鉴定中…',
     verifyDone: (n) => `已验证 ${n} 个模型`,
     authIdentity: '自报身份',
     authIdentityMatch: '自报模型名匹配',
@@ -1219,10 +1186,10 @@ const LANG = {
     authKnowledgeSkip: '无对应探测题',
     authCapability: '能力测试',
     authCapabilityDetail: '通过',
-    authInference: '贝叶斯推断',
-    authConfidence: '置信度',
+    authInference: '评分',
+    authConfidence: '分',
     authLikelyModel: '最可能是',
-    authVerifyProgress: (step, total) => `L${step}/${total} 检测中...`,
+    authVerifyProgress: (step, total) => `L${step}/${total} 鉴定中...`,
     authCutoff: '截止日期',
     authReported: '自报',
     compare: '对比',
@@ -1859,14 +1826,6 @@ function renderDeepAuthDetail(r, rk) {
     rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${t('authCapability')}</span><span class="signal-value">${passed}/${total} ${t('authCapabilityDetail')} · ${details}</span></div>`;
   }
 
-  // L4: Bayesian inference result
-  if (dv.l4Result && dv.l4Result.inference) {
-    const inf = dv.l4Result.inference;
-    const top3 = inf.sorted.slice(0, 3).map(([m, p]) => `${m} ${Math.round(p*100)}%`).join(', ');
-    const icon = dv.isClaimed ? '<span style="color:var(--green)">&#10003;</span>' : '<span style="color:var(--red)">&#10005;</span>';
-    rows += `<div class="auth-detail-row"><span class="signal-icon">${icon}</span><span class="signal-label">${t('authInference')}</span><span class="signal-value">${t('authLikelyModel')}: ${esc(top3)}</span></div>`;
-  }
-
   return `<div class="auth-detail" id="auth-detail-${id}">${rows}</div>`;
 }
 
@@ -2049,14 +2008,12 @@ const CAPABILITY_TESTS = [
   {
     name: 'reasoning_cn',
     prompt: '一个房间里有100个杀手，你进去杀了1个，请问房间里还有几个杀手？只回答数字，不要解释。',
-    check: (r) => /^100$/.test(r.trim()),
-    weights: { 'gpt-4': 0.90, 'gpt-4-turbo': 0.88, 'gpt-4o': 0.88, 'gpt-4o-mini': 0.70, 'gpt-3.5-turbo': 0.25, 'claude-3-opus': 0.92, 'claude-3.5-sonnet': 0.90, 'claude-3-haiku': 0.50, 'deepseek-chat': 0.75, 'deepseek-reasoner': 0.92 }
+    check: (r) => /^100$/.test(r.trim())
   },
   {
     name: 'instruction_en',
     prompt: 'Reply with EXACTLY 5 words (no more, no less): What color is the sky?',
-    check: (r) => { const words = r.trim().replace(/[.!?,;:]/g, '').split(/\s+/).filter(w => w.length > 0); return words.length === 5; },
-    weights: { 'gpt-4': 0.82, 'gpt-4-turbo': 0.80, 'gpt-4o': 0.82, 'gpt-4o-mini': 0.70, 'gpt-3.5-turbo': 0.30, 'claude-3-opus': 0.85, 'claude-3.5-sonnet': 0.83, 'claude-3-haiku': 0.45, 'deepseek-chat': 0.60, 'deepseek-reasoner': 0.80 }
+    check: (r) => { const words = r.trim().replace(/[.!?,;:]/g, '').split(/\s+/).filter(w => w.length > 0); return words.length === 5; }
   },
   {
     name: 'json_strict',
@@ -2070,14 +2027,12 @@ const CAPABILITY_TESTS = [
         const expected = [2,3,5,7,11,13,17,19];
         return JSON.stringify(j.primes_under_20) === JSON.stringify(expected) && j.count === 8;
       } catch { return false; }
-    },
-    weights: { 'gpt-4': 0.88, 'gpt-4-turbo': 0.87, 'gpt-4o': 0.90, 'gpt-4o-mini': 0.80, 'gpt-3.5-turbo': 0.45, 'claude-3-opus': 0.90, 'claude-3.5-sonnet': 0.88, 'claude-3-haiku': 0.55, 'deepseek-chat': 0.70, 'deepseek-reasoner': 0.85 }
+    }
   },
   {
     name: 'reasoning_en',
     prompt: 'A farmer has 17 sheep. All but 9 die. How many sheep are left? Reply with just the number.',
-    check: (r) => /^9$/.test(r.trim()),
-    weights: { 'gpt-4': 0.95, 'gpt-4-turbo': 0.93, 'gpt-4o': 0.94, 'gpt-4o-mini': 0.80, 'gpt-3.5-turbo': 0.45, 'claude-3-opus': 0.95, 'claude-3.5-sonnet': 0.93, 'claude-3-haiku': 0.60, 'deepseek-chat': 0.75, 'deepseek-reasoner': 0.93 }
+    check: (r) => /^9$/.test(r.trim())
   },
   {
     name: 'instruction_cn',
@@ -2085,148 +2040,88 @@ const CAPABILITY_TESTS = [
     check: (r) => {
       const clean = r.trim().replace(/[，。！？、；：""''（）\s\n]/g, '');
       return clean.length === 7;
-    },
-    weights: { 'gpt-4': 0.70, 'gpt-4-turbo': 0.68, 'gpt-4o': 0.72, 'gpt-4o-mini': 0.55, 'gpt-3.5-turbo': 0.20, 'claude-3-opus': 0.72, 'claude-3.5-sonnet': 0.70, 'claude-3-haiku': 0.30, 'deepseek-chat': 0.65, 'deepseek-reasoner': 0.70 }
+    }
   },
 ];
-
-// Bayesian inference
-const MODEL_CANDIDATES = ['gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3.5-sonnet', 'claude-3-haiku', 'deepseek-chat', 'deepseek-reasoner'];
-
-function bayesianInference(testResults, claimedModel) {
-  // Prior: slightly favor the claimed model
-  const priors = {};
-  const claimedNorm = normalizeModelId(claimedModel);
-  for (const m of MODEL_CANDIDATES) {
-    priors[m] = (m === claimedNorm || claimedNorm.startsWith(m) || claimedNorm.includes(m)) ? 0.4 : (0.6 / (MODEL_CANDIDATES.length - 1));
-  }
-
-  const logScores = {};
-  for (const m of MODEL_CANDIDATES) {
-    let logP = Math.log(priors[m] || 0.05);
-    for (const result of testResults) {
-      const w = result.weights[m] || 0.5;
-      logP += result.passed ? Math.log(w + 0.001) : Math.log(1 - w + 0.001);
-    }
-    logScores[m] = logP;
-  }
-
-  // Softmax normalization
-  const maxLog = Math.max(...Object.values(logScores));
-  const expScores = {};
-  let sum = 0;
-  for (const [m, s] of Object.entries(logScores)) {
-    expScores[m] = Math.exp(s - maxLog);
-    sum += expScores[m];
-  }
-
-  const posteriors = {};
-  for (const [m, s] of Object.entries(expScores)) {
-    posteriors[m] = s / sum;
-  }
-
-  // Sort by probability
-  const sorted = Object.entries(posteriors).sort((a, b) => b[1] - a[1]);
-  return { posteriors, sorted, top: sorted[0] };
-}
 
 async function probeL4(base, key, model) {
   const testResults = [];
   for (const test of CAPABILITY_TESTS) {
     const resp = await verifyCall(base, key, model, [{ role: 'user', content: test.prompt }]);
     if (resp._skip) {
-      testResults.push({ name: test.name, passed: null, skip: true, weights: test.weights });
+      testResults.push({ name: test.name, passed: null, skip: true });
       continue;
     }
     const passed = test.check(resp.content);
-    testResults.push({ name: test.name, passed, answer: resp.content.slice(0, 80), weights: test.weights });
+    testResults.push({ name: test.name, passed, answer: resp.content.slice(0, 80) });
   }
 
-  // Run Bayesian inference on non-skipped results
-  const validResults = testResults.filter(r => r.passed !== null);
-  let inference = null;
-  if (validResults.length >= 2) {
-    inference = bayesianInference(validResults, model);
-  }
-
-  return { testResults, inference };
+  return { testResults };
 }
 
-// Combined deep verification verdict
+// Combined deep verification verdict — rule-based scoring
 function computeDeepVerdict(l0l1Signals, l2Result, l3Results, l4Result, claimedModel) {
-  const signals = [...(l0l1Signals || [])];
-  const claimedNorm = normalizeModelId(claimedModel);
+  let score = 0;
+  const breakdown = []; // { label, points }
 
-  // Add L2 signal
-  if (l2Result && !l2Result.skip) {
-    signals.push(l2Result);
+  // L0: Model mismatch → +1
+  const modelMismatch = (l0l1Signals || []).find(s => s.type === 'model_mismatch');
+  if (modelMismatch) {
+    score += 1;
+    breakdown.push({ label: curLang === 'zh' ? '模型不匹配' : 'Model mismatch', points: 1 });
   }
 
-  // Add L3 signals
-  if (l3Results) {
-    for (const r of l3Results) {
-      if (!r.skip) signals.push(r);
-    }
-  }
-
-  // Compute confidence from L4 Bayesian inference
-  let confidence = null;
-  let likelyModel = null;
-  let isClaimed = true;
-
-  if (l4Result && l4Result.inference) {
-    const { top, posteriors } = l4Result.inference;
-    likelyModel = top[0];
-    confidence = Math.round(top[1] * 100);
-
-    // Check if the most likely model matches the claimed model
-    isClaimed = (likelyModel === claimedNorm || claimedNorm.startsWith(likelyModel) || claimedNorm.includes(likelyModel) || likelyModel.includes(claimedNorm));
-
-    // Also check if claimed model is in top 2
-    if (!isClaimed && l4Result.inference.sorted.length > 1) {
-      const second = l4Result.inference.sorted[1];
-      const secondModel = second[0];
-      if (secondModel === claimedNorm || claimedNorm.startsWith(secondModel) || claimedNorm.includes(secondModel)) {
-        // Claimed model is second — less suspicious
-        if (second[1] > 0.25) isClaimed = true;
-      }
-    }
-  }
-
-  // Determine overall verdict
-  let verdict = 'ok';
-  let verdictConfidence = confidence;
-
-  // L3 knowledge failures are strong signals
-  const knowledgeFails = (l3Results || []).filter(r => !r.skip && r.level === 'warn');
-  if (knowledgeFails.length > 0) verdict = 'warn';
-
-  // L2 identity mismatch
-  if (l2Result && !l2Result.skip && l2Result.level === 'warn') {
-    if (verdict === 'ok') verdict = 'warn';
-  }
-
-  // L4 inference says different model
-  if (confidence !== null && !isClaimed) {
-    if (confidence >= 60) verdict = 'fail';
-    else if (confidence >= 40) verdict = 'warn';
-  }
-
-  // Speed too fast from L0/L1 compounds the verdict
+  // L1: Speed too fast
   const speedFast = (l0l1Signals || []).find(s => s.type === 'speed_fast');
-  if (speedFast && verdict === 'warn') {
-    if (parseFloat(speedFast.ratio) >= 1.8) verdict = 'fail';
+  if (speedFast) {
+    const ratio = parseFloat(speedFast.ratio);
+    if (ratio >= 2.0) {
+      score += 3;
+      breakdown.push({ label: curLang === 'zh' ? '速度过快' : 'Speed too fast', points: 3 });
+    } else if (ratio >= 1.5) {
+      score += 2;
+      breakdown.push({ label: curLang === 'zh' ? '速度过快' : 'Speed too fast', points: 2 });
+    }
   }
+
+  // L2: Identity mismatch → +2
+  if (l2Result && !l2Result.skip && !l2Result.match) {
+    score += 2;
+    breakdown.push({ label: curLang === 'zh' ? '身份不符' : 'Identity mismatch', points: 2 });
+  }
+
+  // L3: Knowledge boundary fails → +2 each
+  const l3Fails = (l3Results || []).filter(r => !r.skip && r.level === 'warn');
+  if (l3Fails.length > 0) {
+    const pts = l3Fails.length * 2;
+    score += pts;
+    breakdown.push({ label: curLang === 'zh' ? `知识不符 ${l3Fails.length}题` : `Knowledge fail ${l3Fails.length}q`, points: pts });
+  }
+
+  // L4: Capability test fails → +1 each
+  if (l4Result && l4Result.testResults) {
+    const failed = l4Result.testResults.filter(r => r.passed === false).length;
+    if (failed > 0) {
+      score += failed;
+      const total = l4Result.testResults.filter(r => r.passed !== null).length;
+      breakdown.push({ label: curLang === 'zh' ? `能力题 ${total - failed}/${total}` : `Capability ${total - failed}/${total}`, points: failed });
+    }
+  }
+
+  // Determine verdict from score
+  let verdict;
+  if (score <= 1) verdict = 'ok';
+  else if (score <= 4) verdict = 'warn';
+  else verdict = 'fail';
 
   return {
     verdict,
-    confidence: verdictConfidence,
-    likelyModel,
-    isClaimed,
+    score,
+    breakdown,
     l2Result,
     l3Results: l3Results || [],
     l4Result,
-    signals
+    signals: [...(l0l1Signals || [])]
   };
 }
 
@@ -2288,15 +2183,14 @@ async function verifySelected() {
     const hk = rk;
     if (testHistory[hk]) {
       testHistory[hk].auth = deepResult.verdict;
-      testHistory[hk].authConfidence = deepResult.confidence;
-      testHistory[hk].authLikelyModel = deepResult.likelyModel;
+      testHistory[hk].authScore = deepResult.score;
       localStorage.setItem('mt_testHistory', JSON.stringify(testHistory));
     }
 
     // Save to history log for timeline
     const now2 = new Date();
     const ts2 = `${String(now2.getMonth()+1).padStart(2,'0')}-${String(now2.getDate()).padStart(2,'0')} ${String(now2.getHours()).padStart(2,'0')}:${String(now2.getMinutes()).padStart(2,'0')}`;
-    saveHistoryEntry(rk, { ts: ts2, auth: deepResult.verdict, confidence: deepResult.confidence });
+    saveHistoryEntry(rk, { ts: ts2, auth: deepResult.verdict, score: deepResult.score });
 
     renderResults();
   }
@@ -2552,20 +2446,16 @@ function renderResults() {
         const prog = r._verifyProgress || t('verifying');
         authCell = `<span class="auth-badge auth-badge--na"><span class="spin" style="width:10px;height:10px;border-width:1.5px;"></span> ${esc(prog)}</span>`;
       } else if (r.deepVerify) {
-        // Deep verification complete — show confidence
+        // Deep verification complete — show score + breakdown
         const dv = r.deepVerify;
         const authCls = dv.verdict === 'ok' ? 'ok' : dv.verdict === 'warn' ? 'warn' : 'fail';
         const authLabel = dv.verdict === 'ok' ? t('authOk') : dv.verdict === 'warn' ? t('authWarn') : t('authFail');
-        let confText = '';
-        if (dv.confidence !== null && dv.likelyModel) {
-          if (dv.isClaimed) {
-            confText = `<div style="font-size:11px;color:var(--text3);margin-top:2px;">${dv.confidence}% ${t('authConfidence')}</div>`;
-          } else {
-            confText = `<div style="font-size:11px;color:var(--red);margin-top:2px;">${dv.confidence}% → ${esc(dv.likelyModel)}</div>`;
-          }
+        let scoreText = `<div style="font-size:11px;color:var(--text3);margin-top:2px;">(${dv.score}${t('authConfidence')})</div>`;
+        let breakdownText = '';
+        if (dv.breakdown.length > 0) {
+          breakdownText = `<div style="font-size:10px;color:var(--text4);margin-top:2px;font-family:var(--mono);">${dv.breakdown.map(b => `${b.label} +${b.points}`).join(' | ')}</div>`;
         }
-        const confBar = renderConfidenceBar(dv, r.id);
-        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${confText}${confBar}${renderDeepAuthDetail(r, rk)}`;
+        authCell = `<span class="auth-badge auth-badge--${authCls}" onclick="toggleAuthDetail('${rk.replace(/'/g, "\\'")}')">${authLabel}</span>${scoreText}${breakdownText}${renderDeepAuthDetail(r, rk)}`;
       } else {
         const authCls = r.auth === 'ok' ? 'ok' : r.auth === 'warn' ? 'warn' : 'fail';
         const authLabel = r.auth === 'ok' ? t('authOk') : r.auth === 'warn' ? t('authWarn') : t('authFail');
@@ -2638,9 +2528,8 @@ function exportResults(format) {
         toolError: r.te,
         authenticity: r.authVerdict || '',
         authSignals: r.authSignals || [],
-        authConfidence: r.deepVerify ? r.deepVerify.confidence : null,
-        authLikelyModel: r.deepVerify ? r.deepVerify.likelyModel : null,
-        authIsClaimed: r.deepVerify ? r.deepVerify.isClaimed : null
+        authScore: r.deepVerify ? r.deepVerify.score : null,
+        authBreakdown: r.deepVerify ? r.deepVerify.breakdown : null
       };
     });
     blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -2776,7 +2665,7 @@ function renderCompareTable() {
         if (!v || v === 'idle' || v === 'na') return { cls: 'cmp-na', text: '—' };
         const cls = v === 'ok' ? 'cmp-ok' : v === 'warn' ? 'cmp-warn' : 'cmp-fail';
         let text = v === 'ok' ? t('authOk') : v === 'warn' ? t('authWarn') : t('authFail');
-        if (dv && dv.confidence !== null) text += ` ${dv.confidence}%`;
+        if (dv && dv.score !== undefined) text += ` (${dv.score}${t('authConfidence')})`;
         return { cls: `${cls} compare-verdict`, text };
       }
       default: return { cls: 'cmp-na', text: '—' };
@@ -2796,28 +2685,6 @@ function renderCompareTable() {
       <thead><tr><th>${t('compareDimension')}</th>${chHeaders}</tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
-}
-
-// ── Phase 3: Confidence Bar Visualization ──
-
-function renderConfidenceBar(dv, claimedModel) {
-  if (!dv || !dv.l4Result || !dv.l4Result.inference) return '';
-  const inf = dv.l4Result.inference;
-  const top3 = inf.sorted.slice(0, 3);
-  const claimedNorm = normalizeModelId(claimedModel);
-
-  const bars = top3.map(([model, prob]) => {
-    const pct = Math.round(prob * 100);
-    const isClaimed = (model === claimedNorm || claimedNorm.startsWith(model) || claimedNorm.includes(model) || model.includes(claimedNorm));
-    const color = isClaimed ? 'var(--green)' : (pct > 30 ? 'var(--red)' : 'var(--amber)');
-    return `<div class="conf-bar-row">
-      <span class="conf-bar-label" title="${esc(model)}">${esc(model)}</span>
-      <span class="conf-bar" style="width:${Math.max(pct, 3)}px;max-width:80px;background:${color};"></span>
-      <span class="conf-bar-pct">${pct}%</span>
-    </div>`;
-  }).join('');
-
-  return `<div class="conf-bar-wrap">${bars}</div>`;
 }
 
 // ── Phase 3: History Timeline ──
@@ -2843,7 +2710,7 @@ function renderHistoryTimeline(modelId, channelId) {
 
   const dots = entries.map((e, i) => {
     const color = e.auth === 'ok' ? 'var(--green)' : e.auth === 'warn' ? 'var(--amber)' : e.auth === 'fail' ? 'var(--red)' : 'var(--text4)';
-    const tip = `${e.ts} · ${e.auth || 'n/a'}${e.confidence ? ` ${e.confidence}%` : ''}`;
+    const tip = `${e.ts} · ${e.auth || 'n/a'}${e.score !== undefined ? ` (${e.score}分)` : ''}`;
     const dot = `<span class="history-dot" style="background:${color}" title="${esc(tip)}"></span>`;
     return i < entries.length - 1 ? dot + '<span class="history-line"></span>' : dot;
   }).join('');
@@ -2919,8 +2786,7 @@ function exportFingerprints() {
     capabilityTests: CAPABILITY_TESTS.map(t => ({
       name: t.name,
       prompt: t.prompt,
-      check: t.check.toString(),
-      weights: t.weights
+      check: t.check.toString()
     }))
   };
   // Serialize knowledge probes with regex as string
@@ -2982,7 +2848,7 @@ function importFingerprints(input) {
           if (!existingNames.has(test.name)) {
             let checkFn;
             try { checkFn = new Function('r', test.check); } catch(e) { continue; }
-            CAPABILITY_TESTS.push({ name: test.name, prompt: test.prompt, check: checkFn, weights: test.weights });
+            CAPABILITY_TESTS.push({ name: test.name, prompt: test.prompt, check: checkFn });
             userFingerprints.capabilityTests.push(test);
             count++;
           }
